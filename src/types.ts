@@ -15,6 +15,10 @@ export type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
 
 export type TggCapability = MiniAppMethod | "themeChanged" | "backButtonClicked";
 
+export type TggEventName = "backButtonClicked";
+
+export type TggEventPayload = undefined;
+
 export type MiniAppBridge = {
   postMessage(message: string): void;
   [callbackId: string]: unknown;
@@ -55,12 +59,15 @@ export type MiniAppSDK = {
   BackButton: TggBackButton;
   resolve(id: string, value: unknown): void;
   reject(id: string, error: MiniAppNativeError | string): void;
+  receiveEvent(eventName: TggEventName, payload?: unknown): void;
 };
 
 export type TggBackButton = {
   readonly isVisible: boolean;
   show(): Promise<void>;
   hide(): Promise<void>;
+  onClick(cb: () => void): void;
+  offClick(cb: () => void): void;
 };
 
 export type TggWebApp = Omit<MiniAppSDK, "bridgeName"> & {

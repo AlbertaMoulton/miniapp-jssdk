@@ -38,6 +38,9 @@ tgg.ready();
 await tgg.setTitle("订单详情");
 await tgg.setHeaderColor("bg_color");
 tgg.BackButton.show();
+tgg.BackButton.onClick(() => {
+  // Custom back navigation
+});
 ```
 
 For explicit access:
@@ -72,6 +75,21 @@ The callback also accepts `{ success: true, data }` and rejects on
 `{ success: false, code, message }`. The injected runtime also exposes
 `window.tgg.resolve(id, value)` and `window.tgg.reject(id, error)` for host
 integrations that prefer an explicit runtime namespace.
+
+### Back button click events
+
+When the user taps the back button in the navigation bar, the Flutter host should
+notify the JS runtime by calling `window.tgg.receiveEvent("backButtonClicked")`.
+This is a host-only runtime entrypoint. The SDK's
+`BackButton.onClick(cb)` handlers will fire in response:
+
+```dart
+// Flutter — on back button tap
+webViewController.runJavaScript('window.tgg.receiveEvent("backButtonClicked")');
+```
+
+See the [BackButton event example](#mini-app-usage) above for the developer-side
+usage.
 
 ## Release
 

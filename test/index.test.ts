@@ -268,6 +268,113 @@ test("tgg proxy forwards property access to the injected runtime", () => {
   expect(ready).toHaveBeenCalledOnce();
 });
 
+test("BackButton onClick fires callbacks when backButtonClicked is received", () => {
+  testGlobal.TeamgagaBridge = { postMessage() {} };
+
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+  sdk.BackButton.onClick(handler);
+
+  sdk.receiveEvent("backButtonClicked");
+
+  expect(handler).toHaveBeenCalledOnce();
+});
+
+test("BackButton offClick removes a registered callback", () => {
+  testGlobal.TeamgagaBridge = { postMessage() {} };
+
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+  sdk.BackButton.onClick(handler);
+  sdk.BackButton.offClick(handler);
+
+  sdk.receiveEvent("backButtonClicked");
+
+  expect(handler).not.toHaveBeenCalled();
+});
+
+test("runtime BackButton.onClick fires when backButtonClicked is received", () => {
+  testGlobal.TeamgagaBridge = { postMessage() {} };
+
+  const runtime = createTggRuntime();
+  const handler = vi.fn();
+  runtime.BackButton.onClick(handler);
+
+  runtime.receiveEvent("backButtonClicked");
+
+  expect(handler).toHaveBeenCalledOnce();
+});
+
+test("receiveEvent fires all registered BackButton onClick handlers", () => {
+  testGlobal.TeamgagaBridge = { postMessage() {} };
+
+  const sdk = createMiniAppSDK();
+  const handler1 = vi.fn();
+  const handler2 = vi.fn();
+  sdk.BackButton.onClick(handler1);
+  sdk.BackButton.onClick(handler2);
+
+  sdk.receiveEvent("backButtonClicked");
+
+  expect(handler1).toHaveBeenCalledOnce();
+  expect(handler2).toHaveBeenCalledOnce();
+});
+
+test("BackButton handlers are isolated when one handler throws", () => {
+  testGlobal.TeamgagaBridge = { postMessage() {} };
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+
+  const sdk = createMiniAppSDK();
+  const error = new Error("handler failed");
+  const throwingHandler = vi.fn(() => {
+    throw error;
+  });
+  const nextHandler = vi.fn();
+  sdk.BackButton.onClick(throwingHandler);
+  sdk.BackButton.onClick(nextHandler);
+
+  expect(() => sdk.receiveEvent("backButtonClicked")).not.toThrow();
+
+  expect(throwingHandler).toHaveBeenCalledOnce();
+  expect(nextHandler).toHaveBeenCalledOnce();
+  expect(consoleError).toHaveBeenCalledWith("[Teamgaga] BackButton.onClick handler failed", error);
+
+  consoleError.mockRestore();
+});
+
+test("BackButton dispatch uses a listener snapshot for the current event", () => {
+  testGlobal.TeamgagaBridge = { postMessage() {} };
+
+  const sdk = createMiniAppSDK();
+  const lateHandler = vi.fn();
+  const firstHandler = vi.fn(() => {
+    sdk.BackButton.onClick(lateHandler);
+  });
+  sdk.BackButton.onClick(firstHandler);
+
+  sdk.receiveEvent("backButtonClicked");
+
+  expect(firstHandler).toHaveBeenCalledOnce();
+  expect(lateHandler).not.toHaveBeenCalled();
+
+  sdk.receiveEvent("backButtonClicked");
+
+  expect(firstHandler).toHaveBeenCalledTimes(2);
+  expect(lateHandler).toHaveBeenCalledOnce();
+});
+
+test("receiveEvent ignores unknown events", () => {
+  testGlobal.TeamgagaBridge = { postMessage() {} };
+
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+  sdk.BackButton.onClick(handler);
+
+  expect(() => sdk.receiveEvent("unknown" as never)).not.toThrow();
+
+  expect(handler).not.toHaveBeenCalled();
+});
+
 test("creates and mounts the core runtime on window.tgg", async () => {
   const messages: unknown[] = [];
   testGlobal.TeamgagaBridge = {

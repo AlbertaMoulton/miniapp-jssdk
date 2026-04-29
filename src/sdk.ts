@@ -7,14 +7,30 @@ import type {
   MiniAppSDKOptions,
   MiniAppSystemInfo,
   MiniAppUserInfo,
+  TggEventName,
   TggHeaderColor,
   TggWebApp,
 } from "./types";
+
+const BACK_BUTTON_CLICKED_EVENT: TggEventName = "backButtonClicked";
+const BACK_BUTTON_HANDLER_ERROR_MESSAGE = "[Teamgaga] BackButton.onClick handler failed";
 
 export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK => {
   const bridgeName = options.bridgeName ?? DEFAULT_BRIDGE_NAME;
   const bridgeClient = createBridgeClient(bridgeName);
   let backButtonVisible = false;
+  const backButtonClickHandlers = new Set<() => void>();
+
+  const emitBackButtonClicked = (): void => {
+    const handlers = Array.from(backButtonClickHandlers);
+    handlers.forEach((handler) => {
+      try {
+        handler();
+      } catch (error) {
+        console.error(BACK_BUTTON_HANDLER_ERROR_MESSAGE, error);
+      }
+    });
+  };
 
   return {
     bridgeName,
@@ -29,6 +45,11 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     getSystemInfo: () => bridgeClient.invoke<MiniAppSystemInfo>("getSystemInfo"),
     getCommunityId: () => bridgeClient.invoke<string>("getCommunityId"),
     getCommunityInfo: () => bridgeClient.invoke<MiniAppCommunityInfo>("getCommunityInfo"),
+    receiveEvent: (eventName: TggEventName, _payload?: unknown) => {
+      if (eventName === BACK_BUTTON_CLICKED_EVENT) {
+        emitBackButtonClicked();
+      }
+    },
     BackButton: {
       get isVisible() {
         return backButtonVisible;
@@ -40,6 +61,12 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
       async hide() {
         await bridgeClient.invoke<void>("BackButton.hide");
         backButtonVisible = false;
+      },
+      onClick(cb: () => void) {
+        backButtonClickHandlers.add(cb);
+      },
+      offClick(cb: () => void) {
+        backButtonClickHandlers.delete(cb);
       },
     },
   };
