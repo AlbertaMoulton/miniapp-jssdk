@@ -1,9 +1,10 @@
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { expect, test } from "vite-plus/test";
 
-const packageRoot = resolve(import.meta.dirname, "..");
+const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 test("package import entry points to an ESM bundle", async () => {
   const packageJson = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8")) as {
