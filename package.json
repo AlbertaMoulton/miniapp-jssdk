@@ -1,0 +1,76 @@
+{
+  "name": "@teamgaga/miniapp-jssdk",
+  "version": "0.1.5",
+  "description": "TeamGaga MiniApp JavaScript SDK for Flutter WebView containers",
+  "keywords": [
+    "jssdk",
+    "miniapp",
+    "sdk",
+    "teamgaga",
+    "webview"
+  ],
+  "homepage": "https://github.com/AlbertaMoulton/miniapp-jssdk#readme",
+  "bugs": {
+    "url": "https://github.com/AlbertaMoulton/miniapp-jssdk/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlbertaMoulton/miniapp-jssdk.git"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "type": "module",
+  "main": "./dist/index.iife.js",
+  "module": "./dist/index.esm.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "default": "./dist/index.iife.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "scripts": {
+    "ready": "pnpm run check && pnpm run test && pnpm run build",
+    "build": "pnpm run clean && rollup -c && tsc -p tsconfig.json --emitDeclarationOnly",
+    "check": "vp check",
+    "check:fix": "vp check --fix",
+    "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
+    "fmt": "vp fmt . --write",
+    "fmt:check": "vp fmt --check",
+    "lint": "vp lint",
+    "lint:fix": "vp lint --fix",
+    "pack:check": "pnpm run build && pnpm pack --dry-run",
+    "release:major": "node scripts/release.mjs major",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:patch": "node scripts/release.mjs patch",
+    "test": "vp test",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build"
+  },
+  "devDependencies": {
+    "@babel/core": "latest",
+    "@babel/preset-env": "latest",
+    "@rollup/plugin-babel": "latest",
+    "@rollup/plugin-terser": "latest",
+    "@rollup/plugin-typescript": "latest",
+    "@types/node": "^24.0.0",
+    "rollup": "latest",
+    "tslib": "latest",
+    "typescript": "^5.0.0",
+    "vite-plus": "latest"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@10.33.2"
+}

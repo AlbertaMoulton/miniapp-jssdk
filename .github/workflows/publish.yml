@@ -1,0 +1,51 @@
+name: Publish Package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify
+        run: pnpm run ready
+
+      - name: Verify tag matches package version
+        run: |
+          node <<'NODE'
+          const pkg = require("./package.json");
+          const version = process.env.GITHUB_REF_NAME.slice(1);
+          if (pkg.version !== version) {
+            throw new Error(`Tag version ${version} does not match ${pkg.name} package version ${pkg.version}`);
+          }
+          NODE
+
+      - name: Pack package
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/.release"
+          pnpm pack --pack-destination "$GITHUB_WORKSPACE/.release"
+
+      - name: Publish package
+        run: npm publish .release/*.tgz --access public
