@@ -1,10 +1,19 @@
 export type MiniAppMethod =
+  | "ready"
+  | "setTitle"
+  | "setHeaderColor"
+  | "BackButton.show"
+  | "BackButton.hide"
   | "getOauthCode"
   | "getUserId"
   | "getUserInfo"
   | "getSystemInfo"
   | "getCommunityId"
   | "getCommunityInfo";
+
+export type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
+
+export type TggCapability = MiniAppMethod | "themeChanged" | "backButtonClicked";
 
 export type MiniAppBridge = {
   postMessage(message: string): void;
@@ -34,14 +43,40 @@ export type MiniAppSDKError = Error & {
 
 export type MiniAppSDK = {
   readonly bridgeName: string;
+  ready(): Promise<void>;
+  setTitle(title: string): Promise<void>;
+  setHeaderColor(color: TggHeaderColor): Promise<void>;
   getOauthCode(): Promise<string>;
   getUserId(): Promise<string>;
   getUserInfo(): Promise<MiniAppUserInfo>;
   getSystemInfo(): Promise<MiniAppSystemInfo>;
   getCommunityId(): Promise<string>;
   getCommunityInfo(): Promise<MiniAppCommunityInfo>;
+  BackButton: TggBackButton;
   resolve(id: string, value: unknown): void;
   reject(id: string, error: MiniAppNativeError | string): void;
+};
+
+export type TggBackButton = {
+  readonly isVisible: boolean;
+  show(): Promise<void>;
+  hide(): Promise<void>;
+};
+
+export type TggWebApp = Omit<MiniAppSDK, "bridgeName"> & {
+  readonly version: string;
+  readonly sdkVersion: string;
+  readonly platform: string;
+  readonly appVersion: string;
+  canIUse(capability: string): boolean;
+};
+
+export type TggRuntimeOptions = {
+  appVersion?: string;
+  bridgeName?: string;
+  platform?: string;
+  sdkVersion?: string;
+  version?: string;
 };
 
 type SystemLocale = {

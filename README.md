@@ -2,35 +2,65 @@
 
 JavaScript SDK for TeamGaga miniapps running inside the TeamGaga App Flutter WebView container.
 
+## Runtime vs SDK
+
+This package now has two surfaces:
+
+- `dist/core.js`: runtime code for Flutter WebView `UserScript` injection. It mounts `window.tgg`, talks to the native `TeamgagaBridge`, manages callback promises, and exposes Mini App APIs.
+- `@teamgaga/miniapp-jssdk`: developer-facing TypeScript SDK. It provides types, helper functions, and a typed `tgg` proxy that forwards to the injected `window.tgg`.
+
+The npm SDK does not create a fake runtime by default. In production, `window.tgg`
+must come from the injected core runtime.
+
 ## Build
 
 ```sh
 pnpm run build
 ```
 
-The build emits ES5 IIFE bundles for WebView injection:
+The build emits SDK bundles and WebView runtime bundles:
 
+- `dist/index.esm.js`
 - `dist/index.iife.js`
 - `dist/index.iife.min.js`
+- `dist/core.esm.js`
+- `dist/core.js`
+- `dist/core.min.js`
 - `dist/index.d.ts`
+- `dist/core.d.ts`
 
-## Usage
+## Mini App Usage
 
-```html
-<script src="./dist/index.iife.min.js"></script>
-<script>
-  TeamGagaMiniApp.getUserId().then(function (userId) {
-    console.log(userId);
-  });
-</script>
+```ts
+import { tgg } from "@teamgaga/miniapp-jssdk";
+
+tgg.ready();
+await tgg.setTitle("订单详情");
+await tgg.setHeaderColor("bg_color");
+tgg.BackButton.show();
 ```
 
-The Flutter WebView host should expose `tgg.postMessage`.
+For explicit access:
+
+```ts
+import { getTgg } from "@teamgaga/miniapp-jssdk";
+
+const runtime = getTgg();
+await runtime.getUserInfo();
+```
+
+`getTgg()` throws a clear error when the app is not running inside TeamGaga and
+`window.tgg` has not been injected.
+
+## Flutter Host Integration
+
+Flutter should inject `dist/core.js` at document start. The host should expose
+`TeamgagaBridge.postMessage`.
 Each request includes a callback name such as `tgg_cb_1`. Native responses can
-be completed by calling that callback on the `tgg` bridge object:
+be completed by calling that callback on the `TeamgagaBridge` object:
 
 ```js
-tgg.tgg_cb_1({
+TeamgagaBridge.tgg_cb_1({
   userId: "user-123",
   avatar: "https://example.com/avatar.png",
   username: "alice",
@@ -39,9 +69,9 @@ tgg.tgg_cb_1({
 ```
 
 The callback also accepts `{ success: true, data }` and rejects on
-`{ success: false, code, message }`. `TeamGagaMiniApp.resolve(id, value)` and
-`TeamGagaMiniApp.reject(id, error)` remain available for host integrations that
-prefer an explicit SDK namespace.
+`{ success: false, code, message }`. The injected runtime also exposes
+`window.tgg.resolve(id, value)` and `window.tgg.reject(id, error)` for host
+integrations that prefer an explicit runtime namespace.
 
 ## Release
 

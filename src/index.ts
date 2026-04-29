@@ -1,15 +1,21 @@
 export {
   TeamGagaMiniApp,
   createMiniAppSDK,
+  getTgg,
   getCommunityId,
   getCommunityInfo,
   getOauthCode,
   getSystemInfo,
   getUserId,
   getUserInfo,
+  setHeaderColor,
+  setTitle,
+  tgg,
 } from "./sdk";
 
-export { TeamGagaMiniApp as default } from "./sdk";
+export { createTggRuntime, getSupportedCapabilities, installTggRuntime } from "./core-runtime";
+
+export { tgg as default } from "./sdk";
 
 export type {
   MiniAppBridge,
@@ -22,4 +28,9 @@ export type {
   MiniAppSDKOptions,
   MiniAppSystemInfo,
   MiniAppUserInfo,
+  TggBackButton,
+  TggCapability,
+  TggHeaderColor,
+  TggRuntimeOptions,
+  TggWebApp,
 } from "./types";

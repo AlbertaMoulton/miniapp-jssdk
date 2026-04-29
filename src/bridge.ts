@@ -21,7 +21,7 @@ type NativeCallbackResult = {
 };
 
 export type MiniAppBridgeClient = {
-  invoke<T>(method: MiniAppMethod): Promise<T>;
+  invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
   resolve(id: string, value: unknown): void;
   reject(id: string, error: MiniAppNativeError | string): void;
 };
@@ -90,7 +90,7 @@ export const createBridgeClient = (bridgeName: string): MiniAppBridgeClient => {
     };
   };
 
-  const invoke = <T>(method: MiniAppMethod): Promise<T> => {
+  const invoke = <T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T> => {
     const bridge = getBridge();
 
     if (!bridge) {
@@ -100,6 +100,7 @@ export const createBridgeClient = (bridgeName: string): MiniAppBridgeClient => {
     const request: MiniAppRequest = {
       callback: createCallbackId(),
       api: method,
+      ...(params ? { params } : {}),
     };
 
     return new Promise<T>((resolve, reject) => {

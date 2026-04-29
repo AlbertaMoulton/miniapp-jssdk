@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, expect, test, vi } from "vite-plus/test";
 
 import {
-  default as defaultMiniAppSDK,
+  createTggRuntime,
   createMiniAppSDK,
+  default as defaultTgg,
+  getTgg,
   getCommunityInfo,
   getCommunityId,
   getOauthCode,
   getSystemInfo,
-  TeamGagaMiniApp,
+  tgg,
   getUserId,
   getUserInfo,
 } from "../src/index";
@@ -27,11 +29,12 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
   delete testGlobal.tgg;
+  delete testGlobal.TeamgagaBridge;
 });
 
 test("calls the Flutter WebView bridge with callback id and api name", async () => {
   const messages: unknown[] = [];
-  testGlobal.tgg = {
+  testGlobal.TeamgagaBridge = {
     postMessage(message: string) {
       messages.push(JSON.parse(message));
     },
@@ -53,13 +56,13 @@ test("calls the Flutter WebView bridge with callback id and api name", async () 
 });
 
 test("registers a callback on the tgg bridge for native responses", async () => {
-  testGlobal.tgg = {
+  testGlobal.TeamgagaBridge = {
     postMessage() {},
   };
 
   const sdk = createMiniAppSDK();
   const promise = sdk.getUserInfo();
-  const bridge = testGlobal.tgg as TestBridge;
+  const bridge = testGlobal.TeamgagaBridge as TestBridge;
 
   expect(bridge.tgg_cb_1).toEqual(expect.any(Function));
 
@@ -80,13 +83,13 @@ test("registers a callback on the tgg bridge for native responses", async () => 
 });
 
 test("bridge callbacks can reject native errors", async () => {
-  testGlobal.tgg = {
+  testGlobal.TeamgagaBridge = {
     postMessage() {},
   };
 
   const sdk = createMiniAppSDK();
   const promise = sdk.getUserInfo();
-  const bridge = testGlobal.tgg as TestBridge;
+  const bridge = testGlobal.TeamgagaBridge as TestBridge;
 
   (bridge.tgg_cb_1 as (value: unknown) => void)({
     code: "USER_UNAVAILABLE",
@@ -102,13 +105,13 @@ test("bridge callbacks can reject native errors", async () => {
 });
 
 test("bridge callbacks parse JSON string responses", async () => {
-  testGlobal.tgg = {
+  testGlobal.TeamgagaBridge = {
     postMessage() {},
   };
 
   const sdk = createMiniAppSDK();
   const promise = sdk.getUserInfo();
-  const bridge = testGlobal.tgg as TestBridge;
+  const bridge = testGlobal.TeamgagaBridge as TestBridge;
 
   (bridge.tgg_cb_1 as (value: unknown) => void)(
     JSON.stringify({
@@ -137,16 +140,13 @@ test("exposes all known miniapp API methods", () => {
   expect(getCommunityInfo).toEqual(expect.any(Function));
 });
 
-test("supports default imports for app bundlers", async () => {
-  expect(defaultMiniAppSDK).toBe(TeamGagaMiniApp);
-  await expect(defaultMiniAppSDK.getSystemInfo()).rejects.toThrow(
-    "TeamGaga miniapp bridge is unavailable",
-  );
+test("supports default imports as the typed runtime proxy", () => {
+  expect(defaultTgg).toBe(tgg);
 });
 
 test("keeps callback ids unique when earlier requests finish out of order", async () => {
   const messages: Array<{ callback: string; api: string }> = [];
-  testGlobal.tgg = {
+  testGlobal.TeamgagaBridge = {
     postMessage(message: string) {
       messages.push(JSON.parse(message) as { callback: string; api: string });
     },
@@ -184,7 +184,7 @@ test("keeps callback ids unique when earlier requests finish out of order", asyn
 });
 
 test("rejects pending calls when native side reports an error", async () => {
-  testGlobal.tgg = {
+  testGlobal.TeamgagaBridge = {
     postMessage() {},
   };
 
@@ -237,4 +237,108 @@ test("allows custom bridge names for host integration tests", async () => {
   });
 
   delete testGlobal.CustomMiniAppBridge;
+});
+
+test("getTgg returns the injected runtime", () => {
+  const runtime = {
+    version: "0.1.5",
+    sdkVersion: "0.1.5",
+    platform: "web",
+    ready: vi.fn(),
+  };
+  testGlobal.tgg = runtime;
+
+  expect(getTgg()).toBe(runtime);
+});
+
+test("getTgg explains when the injected runtime is missing", () => {
+  expect(() => getTgg()).toThrow(
+    "[Teamgaga] window.tgg is not injected. Please run inside Teamgaga App.",
+  );
+});
+
+test("tgg proxy forwards property access to the injected runtime", () => {
+  const ready = vi.fn();
+  testGlobal.tgg = {
+    ready,
+  };
+
+  void tgg.ready();
+
+  expect(ready).toHaveBeenCalledOnce();
+});
+
+test("creates and mounts the core runtime on window.tgg", async () => {
+  const messages: unknown[] = [];
+  testGlobal.TeamgagaBridge = {
+    postMessage(message: string) {
+      messages.push(JSON.parse(message));
+    },
+  };
+
+  const runtime = createTggRuntime({
+    appVersion: "3.2.0",
+    platform: "ios",
+    version: "1.4.0",
+  });
+  const promise = runtime.setHeaderColor("bg_color");
+
+  expect(testGlobal.tgg).toBe(runtime);
+  expect(runtime.appVersion).toBe("3.2.0");
+  expect(runtime.platform).toBe("ios");
+  expect(runtime.version).toBe("1.4.0");
+  expect(runtime.canIUse("setHeaderColor")).toBe(true);
+  expect(runtime.canIUse("BackButton.show")).toBe(true);
+  expect(messages).toEqual([
+    {
+      callback: "tgg_cb_1",
+      api: "setHeaderColor",
+      params: {
+        color: "bg_color",
+      },
+    },
+  ]);
+
+  runtime.resolve("tgg_cb_1", undefined);
+
+  await expect(promise).resolves.toBeUndefined();
+});
+
+test("core runtime exposes ready, setTitle, and BackButton APIs", async () => {
+  const messages: unknown[] = [];
+  testGlobal.TeamgagaBridge = {
+    postMessage(message: string) {
+      messages.push(JSON.parse(message));
+    },
+  };
+
+  const runtime = createTggRuntime();
+
+  void runtime.ready();
+  const titlePromise = runtime.setTitle("订单详情");
+  const backButtonPromise = runtime.BackButton.show();
+
+  expect(messages).toEqual([
+    {
+      callback: "tgg_cb_1",
+      api: "ready",
+    },
+    {
+      callback: "tgg_cb_2",
+      api: "setTitle",
+      params: {
+        title: "订单详情",
+      },
+    },
+    {
+      callback: "tgg_cb_3",
+      api: "BackButton.show",
+    },
+  ]);
+
+  runtime.resolve("tgg_cb_2", undefined);
+  runtime.resolve("tgg_cb_3", undefined);
+
+  await expect(titlePromise).resolves.toBeUndefined();
+  await expect(backButtonPromise).resolves.toBeUndefined();
 });

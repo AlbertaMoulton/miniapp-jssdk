@@ -33,6 +33,11 @@
       "import": "./dist/index.esm.js",
       "default": "./dist/index.iife.js"
     },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.esm.js",
+      "default": "./dist/core.js"
+    },
     "./package.json": "./package.json"
   },
   "publishConfig": {

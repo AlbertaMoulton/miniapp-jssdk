@@ -14,10 +14,16 @@ test("package import entry points to an ESM bundle", async () => {
         import?: string;
         default?: string;
       };
+      "./core"?: {
+        import?: string;
+        default?: string;
+      };
     };
   };
 
   expect(packageJson.module).toBe("./dist/index.esm.js");
   expect(packageJson.exports?.["."]?.import).toBe("./dist/index.esm.js");
   expect(packageJson.exports?.["."]?.default).toBe("./dist/index.iife.js");
+  expect(packageJson.exports?.["./core"]?.import).toBe("./dist/core.esm.js");
+  expect(packageJson.exports?.["./core"]?.default).toBe("./dist/core.js");
 });

@@ -72,4 +72,45 @@ export default [
       }),
     ],
   },
+  {
+    input: "src/core.ts",
+    output: {
+      file: "dist/core.esm.js",
+      format: "esm",
+      sourcemap: true,
+    },
+    plugins: basePlugins,
+  },
+  {
+    input: "src/core.ts",
+    output: {
+      file: "dist/core.js",
+      format: "iife",
+      name: "TeamGagaMiniAppCore",
+      exports: "named",
+      sourcemap: true,
+    },
+    plugins: basePlugins,
+  },
+  {
+    input: "src/core.ts",
+    output: {
+      file: "dist/core.min.js",
+      format: "iife",
+      name: "TeamGagaMiniAppCore",
+      exports: "named",
+      sourcemap: true,
+    },
+    plugins: [
+      ...basePlugins,
+      terser({
+        compress: true,
+        ecma: 5,
+        format: {
+          comments: false,
+        },
+        mangle: true,
+      }),
+    ],
+  },
 ];
