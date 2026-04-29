@@ -30,6 +30,8 @@ export type {
   MiniAppUserInfo,
   TggBackButton,
   TggCapability,
+  TggEventName,
+  TggEventPayload,
   TggHeaderColor,
   TggRuntimeOptions,
   TggWebApp,

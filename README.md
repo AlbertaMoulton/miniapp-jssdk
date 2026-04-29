@@ -12,6 +12,9 @@ This package now has two surfaces:
 The npm SDK does not create a fake runtime by default. In production, `window.tgg`
 must come from the injected core runtime.
 
+Developer-facing API details are available in
+[`docs/developer-api.md`](docs/developer-api.md).
+
 ## Build
 
 ```sh
