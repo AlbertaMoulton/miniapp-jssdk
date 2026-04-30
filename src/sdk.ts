@@ -37,6 +37,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     resolve: (id, value) => bridgeClient.resolve(id, value),
     reject: (id, error) => bridgeClient.reject(id, error),
     ready: () => bridgeClient.invoke<void>("ready"),
+    close: () => bridgeClient.invoke<void>("close"),
     setHeaderColor: (color) => bridgeClient.invoke<void>("setHeaderColor", { color }),
     getOauthCode: () => bridgeClient.invoke<string>("getOauthCode"),
     getUserId: () => bridgeClient.invoke<string>("getUserId"),

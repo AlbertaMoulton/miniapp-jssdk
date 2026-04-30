@@ -1,5 +1,6 @@
 export type MiniAppMethod =
   | "ready"
+  | "close"
   | "setHeaderColor"
   | "BackButton.show"
   | "BackButton.hide"
@@ -47,6 +48,7 @@ export type MiniAppSDKError = Error & {
 export type MiniAppSDK = {
   readonly bridgeName: string;
   ready(): Promise<void>;
+  close(): Promise<void>;
   setHeaderColor(color: TggHeaderColor): Promise<void>;
   getOauthCode(): Promise<string>;
   getUserId(): Promise<string>;

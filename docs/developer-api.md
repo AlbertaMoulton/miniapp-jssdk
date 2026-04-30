@@ -22,6 +22,7 @@ import { tgg } from "@teamgaga/miniapp-jssdk";
 
 tgg.ready();
 await tgg.setHeaderColor("bg_color");
+await tgg.close();
 ```
 
 `tgg` 本身不会创建运行时。真实的 `window.tgg` 必须由 TeamGaga App 注入；如果在普通浏览器里直接调用，SDK 会抛出错误。
@@ -155,6 +156,33 @@ tgg.ready(): Promise<void>
 
 ```ts
 await tgg.ready();
+```
+
+## 小程序控制 API
+
+### `tgg.close()`
+
+```ts
+tgg.close(): Promise<void>
+```
+
+使用场景：
+
+- 小程序业务流程结束后，请求 TeamGaga App 关闭当前 Mini App。
+- 例如支付完成、提交成功、用户主动点击关闭按钮等。
+
+参数：无。
+
+返回值：
+
+| 类型            | 说明                                        |
+| --------------- | ------------------------------------------- |
+| `Promise<void>` | Native 确认关闭请求后 resolve；无返回数据。 |
+
+示例：
+
+```ts
+await tgg.close();
 ```
 
 ## 导航栏 API
@@ -629,6 +657,7 @@ tgg.canIUse(capability: string): boolean
 | 能力名                | 说明                       |
 | --------------------- | -------------------------- |
 | `"ready"`             | 页面 ready 通知。          |
+| `"close"`             | 关闭当前 Mini App。        |
 | `"setHeaderColor"`    | 设置原生导航栏颜色。       |
 | `"BackButton.show"`   | 展示原生返回按钮。         |
 | `"BackButton.hide"`   | 隐藏原生返回按钮。         |
@@ -923,6 +952,7 @@ type TggWebApp = Omit<MiniAppSDK, "bridgeName"> & {
 ```ts
 type MiniAppMethod =
   | "ready"
+  | "close"
   | "setHeaderColor"
   | "BackButton.show"
   | "BackButton.hide"

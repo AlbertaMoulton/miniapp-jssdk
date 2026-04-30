@@ -5,6 +5,7 @@ import type { MiniAppMethod, TggRuntimeOptions, TggWebApp } from "./types";
 
 const SUPPORTED_CAPABILITIES = new Set<string>([
   "ready",
+  "close",
   "setHeaderColor",
   "BackButton.show",
   "BackButton.hide",
@@ -53,6 +54,7 @@ export const getSupportedCapabilities = (): readonly MiniAppMethod[] =>
   Array.from(SUPPORTED_CAPABILITIES).filter((capability): capability is MiniAppMethod =>
     [
       "ready",
+      "close",
       "setHeaderColor",
       "BackButton.show",
       "BackButton.hide",

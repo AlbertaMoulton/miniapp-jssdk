@@ -442,3 +442,27 @@ test("core runtime exposes ready and BackButton APIs without setTitle", async ()
 
   await expect(backButtonPromise).resolves.toBeUndefined();
 });
+
+test("close asks the native host to close the Mini App", async () => {
+  const messages: unknown[] = [];
+  testGlobal.TeamgagaBridge = {
+    postMessage(message: string) {
+      messages.push(JSON.parse(message));
+    },
+  };
+
+  const runtime = createTggRuntime();
+  const closePromise = runtime.close();
+
+  expect(runtime.canIUse("close")).toBe(true);
+  expect(messages).toEqual([
+    {
+      callback: "tgg_cb_1",
+      api: "close",
+    },
+  ]);
+
+  runtime.resolve("tgg_cb_1", undefined);
+
+  await expect(closePromise).resolves.toBeUndefined();
+});

@@ -43,6 +43,7 @@ tgg.BackButton.show();
 tgg.BackButton.onClick(() => {
   // Custom back navigation
 });
+await tgg.close();
 ```
 
 For explicit access:
