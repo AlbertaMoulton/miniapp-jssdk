@@ -38,7 +38,6 @@ The build emits SDK bundles and WebView runtime bundles:
 import { tgg } from "@teamgaga/miniapp-jssdk";
 
 tgg.ready();
-await tgg.setTitle("订单详情");
 await tgg.setHeaderColor("bg_color");
 tgg.BackButton.show();
 tgg.BackButton.onClick(() => {

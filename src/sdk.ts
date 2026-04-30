@@ -37,7 +37,6 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     resolve: (id, value) => bridgeClient.resolve(id, value),
     reject: (id, error) => bridgeClient.reject(id, error),
     ready: () => bridgeClient.invoke<void>("ready"),
-    setTitle: (title) => bridgeClient.invoke<void>("setTitle", { title }),
     setHeaderColor: (color) => bridgeClient.invoke<void>("setHeaderColor", { color }),
     getOauthCode: () => bridgeClient.invoke<string>("getOauthCode"),
     getUserId: () => bridgeClient.invoke<string>("getUserId"),
@@ -105,8 +104,6 @@ export const getSystemInfo = (): Promise<MiniAppSystemInfo> => getTgg().getSyste
 export const getCommunityId = (): Promise<string> => getTgg().getCommunityId();
 
 export const getCommunityInfo = (): Promise<MiniAppCommunityInfo> => getTgg().getCommunityInfo();
-
-export const setTitle = (title: string): Promise<void> => getTgg().setTitle(title);
 
 export const setHeaderColor = (color: TggHeaderColor): Promise<void> =>
   getTgg().setHeaderColor(color);

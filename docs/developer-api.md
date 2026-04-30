@@ -21,7 +21,6 @@ npm install @teamgaga/miniapp-jssdk
 import { tgg } from "@teamgaga/miniapp-jssdk";
 
 tgg.ready();
-await tgg.setTitle("订单详情");
 await tgg.setHeaderColor("bg_color");
 ```
 
@@ -126,7 +125,6 @@ import {
   getUserId,
   getUserInfo,
   setHeaderColor,
-  setTitle,
 } from "@teamgaga/miniapp-jssdk";
 ```
 
@@ -161,40 +159,11 @@ await tgg.ready();
 
 ## 导航栏 API
 
-### `tgg.setTitle(title)`
+TeamGaga 参考 Telegram Mini App 的顶部导航栏策略，不提供动态 `setTitle` 能力：
 
-```ts
-tgg.setTitle(title: string): Promise<void>
-```
-
-使用场景：
-
-- 根据当前页面或业务状态修改 App 原生导航栏标题。
-- 例如订单详情、支付结果、活动页面等。
-
-参数：
-
-| 参数    | 类型     | 必填 | 说明                             |
-| ------- | -------- | ---- | -------------------------------- |
-| `title` | `string` | 是   | 要展示在原生导航栏上的标题文本。 |
-
-返回值：
-
-| 类型            | 说明                             |
-| --------------- | -------------------------------- |
-| `Promise<void>` | 设置成功后 resolve；无返回数据。 |
-
-示例：
-
-```ts
-await tgg.setTitle("订单详情");
-```
-
-便捷函数：
-
-```ts
-await setTitle("订单详情");
-```
+- `mode === "fullscreen"` 时，小程序页面可以在页面内容区域自定义标题。
+- 非 fullscreen 模式，例如 compact / fullsize，原生顶部栏标题固定使用宿主侧配置的标题，不随页面路由变化。
+- 小程序可以设置顶部栏背景色，但不能通过 JS 动态修改原生顶部栏标题文本。
 
 ### `tgg.setHeaderColor(color)`
 
@@ -660,7 +629,6 @@ tgg.canIUse(capability: string): boolean
 | 能力名                | 说明                       |
 | --------------------- | -------------------------- |
 | `"ready"`             | 页面 ready 通知。          |
-| `"setTitle"`          | 设置原生导航栏标题。       |
 | `"setHeaderColor"`    | 设置原生导航栏颜色。       |
 | `"BackButton.show"`   | 展示原生返回按钮。         |
 | `"BackButton.hide"`   | 隐藏原生返回按钮。         |
@@ -955,7 +923,6 @@ type TggWebApp = Omit<MiniAppSDK, "bridgeName"> & {
 ```ts
 type MiniAppMethod =
   | "ready"
-  | "setTitle"
   | "setHeaderColor"
   | "BackButton.show"
   | "BackButton.hide"

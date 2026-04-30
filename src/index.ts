@@ -9,7 +9,6 @@ export {
   getUserId,
   getUserInfo,
   setHeaderColor,
-  setTitle,
   tgg,
 } from "./sdk";
 

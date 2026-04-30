@@ -411,7 +411,7 @@ test("creates and mounts the core runtime on window.tgg", async () => {
   await expect(promise).resolves.toBeUndefined();
 });
 
-test("core runtime exposes ready, setTitle, and BackButton APIs", async () => {
+test("core runtime exposes ready and BackButton APIs without setTitle", async () => {
   const messages: unknown[] = [];
   testGlobal.TeamgagaBridge = {
     postMessage(message: string) {
@@ -420,11 +420,13 @@ test("core runtime exposes ready, setTitle, and BackButton APIs", async () => {
   };
 
   const runtime = createTggRuntime();
+  const runtimeRecord = runtime as unknown as Record<string, unknown>;
 
   void runtime.ready();
-  const titlePromise = runtime.setTitle("订单详情");
   const backButtonPromise = runtime.BackButton.show();
 
+  expect(runtime.canIUse("setTitle")).toBe(false);
+  expect(runtimeRecord.setTitle).toBeUndefined();
   expect(messages).toEqual([
     {
       callback: "tgg_cb_1",
@@ -432,20 +434,11 @@ test("core runtime exposes ready, setTitle, and BackButton APIs", async () => {
     },
     {
       callback: "tgg_cb_2",
-      api: "setTitle",
-      params: {
-        title: "订单详情",
-      },
-    },
-    {
-      callback: "tgg_cb_3",
       api: "BackButton.show",
     },
   ]);
 
   runtime.resolve("tgg_cb_2", undefined);
-  runtime.resolve("tgg_cb_3", undefined);
 
-  await expect(titlePromise).resolves.toBeUndefined();
   await expect(backButtonPromise).resolves.toBeUndefined();
 });
