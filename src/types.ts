@@ -15,23 +15,18 @@ export type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
 
 export type TggCapability = MiniAppMethod | "themeChanged" | "backButtonClicked";
 
-export type TggEventName = "backButtonClicked";
+export type TggEventName = "backButtonClicked" | "themeChanged";
 
-export type TggEventPayload = undefined;
+export type TggEventPayload = unknown;
 
-export type MiniAppBridge = {
-  postMessage(message: string): void;
-  [callbackId: string]: unknown;
-};
+export type MiniAppPermission = "user:read" | "system:read" | "community:read";
 
-export type MiniAppSDKOptions = {
-  bridgeName?: string;
-};
-
-export type MiniAppRequest = {
-  callback: string; // callback function unique id
-  api: MiniAppMethod; // api name
-  params?: Record<string, unknown>; // params of calling api
+export type MiniAppInvokeRequest = {
+  id: string;
+  method: MiniAppMethod;
+  params?: Record<string, unknown>;
+  sdkVersion: string;
+  timestamp: number;
 };
 
 export type MiniAppNativeError = {
@@ -39,14 +34,51 @@ export type MiniAppNativeError = {
   message?: string;
 };
 
-export type MiniAppNativeCallbackPayload = unknown;
+export type MiniAppInvokeSuccessResponse<T = unknown> = {
+  success: true;
+  data?: T;
+};
+
+export type MiniAppInvokeFailureResponse = {
+  success: false;
+  error?: MiniAppNativeError;
+  code?: string;
+  message?: string;
+};
+
+export type MiniAppInvokeResponse<T = unknown> =
+  | MiniAppInvokeSuccessResponse<T>
+  | MiniAppInvokeFailureResponse;
+
+export type FlutterInAppWebViewBridge = {
+  callHandler(handlerName: string, payload: unknown): Promise<unknown>;
+};
+
+export type BridgeTransport = {
+  send<T>(request: MiniAppInvokeRequest): Promise<T>;
+};
+
+export type MiniAppCapabilityDefinition = {
+  name: TggCapability;
+  permission?: MiniAppPermission;
+  minAppVersion?: string;
+  enabled?: boolean;
+};
+
+export type MiniAppSDKOptions = {
+  handlerName?: string;
+  permissions?: readonly MiniAppPermission[];
+  sdkVersion?: string;
+  capabilities?: readonly MiniAppCapabilityDefinition[];
+};
 
 export type MiniAppSDKError = Error & {
   code?: string;
 };
 
 export type MiniAppSDK = {
-  readonly bridgeName: string;
+  invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
+  canIUse(capability: string): boolean;
   ready(): Promise<void>;
   close(): Promise<void>;
   setHeaderColor(color: TggHeaderColor): Promise<void>;
@@ -57,8 +89,6 @@ export type MiniAppSDK = {
   getCommunityId(): Promise<string>;
   getCommunityInfo(): Promise<MiniAppCommunityInfo>;
   BackButton: TggBackButton;
-  resolve(id: string, value: unknown): void;
-  reject(id: string, error: MiniAppNativeError | string): void;
   receiveEvent(eventName: TggEventName, payload?: unknown): void;
 };
 
@@ -70,19 +100,16 @@ export type TggBackButton = {
   offClick(cb: () => void): void;
 };
 
-export type TggWebApp = Omit<MiniAppSDK, "bridgeName"> & {
+export type TggWebApp = MiniAppSDK & {
   readonly version: string;
   readonly sdkVersion: string;
   readonly platform: string;
   readonly appVersion: string;
-  canIUse(capability: string): boolean;
 };
 
-export type TggRuntimeOptions = {
+export type TggRuntimeOptions = MiniAppSDKOptions & {
   appVersion?: string;
-  bridgeName?: string;
   platform?: string;
-  sdkVersion?: string;
   version?: string;
 };
 
@@ -126,3 +153,11 @@ export type MiniAppCommunityInfo = {
   name?: string;
   icon?: string;
 };
+
+declare global {
+  interface Window {
+    flutter_inappwebview?: FlutterInAppWebViewBridge;
+    tgg?: TggWebApp;
+    __tgg_emit?: (eventName: string, payload?: unknown) => void;
+  }
+}

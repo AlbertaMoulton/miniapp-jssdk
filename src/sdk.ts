@@ -1,8 +1,11 @@
 import { createBridgeClient } from "./bridge";
-import { DEFAULT_BRIDGE_NAME, SDK_NOT_INJECTED_MESSAGE, TGG_GLOBAL_NAME } from "./constants";
+import { SDK_NOT_INJECTED_MESSAGE, TGG_GLOBAL_NAME } from "./constants";
+import { createMiniAppError } from "./errors";
 import { getRuntimeGlobal } from "./runtime";
 import type {
+  MiniAppCapabilityDefinition,
   MiniAppCommunityInfo,
+  MiniAppMethod,
   MiniAppSDK,
   MiniAppSDKOptions,
   MiniAppSystemInfo,
@@ -14,12 +17,79 @@ import type {
 
 const BACK_BUTTON_CLICKED_EVENT: TggEventName = "backButtonClicked";
 const BACK_BUTTON_HANDLER_ERROR_MESSAGE = "[Teamgaga] BackButton.onClick handler failed";
+const PERMISSION_DENIED_CODE = "PERMISSION_DENIED";
+
+export const DEFAULT_CAPABILITIES: readonly MiniAppCapabilityDefinition[] = [
+  { name: "ready" },
+  { name: "close" },
+  { name: "setHeaderColor" },
+  { name: "BackButton.show" },
+  { name: "BackButton.hide" },
+  { name: "getOauthCode", permission: "user:read" },
+  { name: "getUserId", permission: "user:read" },
+  { name: "getUserInfo", permission: "user:read" },
+  { name: "getSystemInfo", permission: "system:read" },
+  { name: "getCommunityId", permission: "community:read" },
+  { name: "getCommunityInfo", permission: "community:read" },
+  { name: "themeChanged" },
+  { name: "backButtonClicked" },
+];
+
+export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
+  "ready",
+  "close",
+  "setHeaderColor",
+  "BackButton.show",
+  "BackButton.hide",
+  "getOauthCode",
+  "getUserId",
+  "getUserInfo",
+  "getSystemInfo",
+  "getCommunityId",
+  "getCommunityInfo",
+];
 
 export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK => {
-  const bridgeName = options.bridgeName ?? DEFAULT_BRIDGE_NAME;
-  const bridgeClient = createBridgeClient(bridgeName);
+  const bridgeClient = createBridgeClient({
+    handlerName: options.handlerName,
+    sdkVersion: options.sdkVersion,
+  });
+  const permissions = new Set(options.permissions ?? []);
+  const capabilities = new Map<string, MiniAppCapabilityDefinition>(
+    [...DEFAULT_CAPABILITIES, ...(options.capabilities ?? [])].map((capability) => [
+      capability.name,
+      capability,
+    ]),
+  );
   let backButtonVisible = false;
   const backButtonClickHandlers = new Set<() => void>();
+
+  const canIUse = (capabilityName: string): boolean => {
+    const capability = capabilities.get(capabilityName);
+
+    if (!capability || capability.enabled === false) {
+      return false;
+    }
+
+    if (capability.permission && !permissions.has(capability.permission)) {
+      return false;
+    }
+
+    return true;
+  };
+
+  const invoke = <T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T> => {
+    if (!canIUse(method)) {
+      return Promise.reject(
+        createMiniAppError(
+          `Permission denied or unsupported capability: ${method}`,
+          PERMISSION_DENIED_CODE,
+        ),
+      );
+    }
+
+    return bridgeClient.invoke<T>(method, params);
+  };
 
   const emitBackButtonClicked = (): void => {
     const handlers = Array.from(backButtonClickHandlers);
@@ -33,18 +103,17 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
   };
 
   return {
-    bridgeName,
-    resolve: (id, value) => bridgeClient.resolve(id, value),
-    reject: (id, error) => bridgeClient.reject(id, error),
-    ready: () => bridgeClient.invoke<void>("ready"),
-    close: () => bridgeClient.invoke<void>("close"),
-    setHeaderColor: (color) => bridgeClient.invoke<void>("setHeaderColor", { color }),
-    getOauthCode: () => bridgeClient.invoke<string>("getOauthCode"),
-    getUserId: () => bridgeClient.invoke<string>("getUserId"),
-    getUserInfo: () => bridgeClient.invoke<MiniAppUserInfo>("getUserInfo"),
-    getSystemInfo: () => bridgeClient.invoke<MiniAppSystemInfo>("getSystemInfo"),
-    getCommunityId: () => bridgeClient.invoke<string>("getCommunityId"),
-    getCommunityInfo: () => bridgeClient.invoke<MiniAppCommunityInfo>("getCommunityInfo"),
+    invoke,
+    canIUse,
+    ready: () => invoke<void>("ready"),
+    close: () => invoke<void>("close"),
+    setHeaderColor: (color) => invoke<void>("setHeaderColor", { color }),
+    getOauthCode: () => invoke<string>("getOauthCode"),
+    getUserId: () => invoke<string>("getUserId"),
+    getUserInfo: () => invoke<MiniAppUserInfo>("getUserInfo"),
+    getSystemInfo: () => invoke<MiniAppSystemInfo>("getSystemInfo"),
+    getCommunityId: () => invoke<string>("getCommunityId"),
+    getCommunityInfo: () => invoke<MiniAppCommunityInfo>("getCommunityInfo"),
     receiveEvent: (eventName: TggEventName, _payload?: unknown) => {
       if (eventName === BACK_BUTTON_CLICKED_EVENT) {
         emitBackButtonClicked();
@@ -55,11 +124,11 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
         return backButtonVisible;
       },
       async show() {
-        await bridgeClient.invoke<void>("BackButton.show");
+        await invoke<void>("BackButton.show");
         backButtonVisible = true;
       },
       async hide() {
-        await bridgeClient.invoke<void>("BackButton.hide");
+        await invoke<void>("BackButton.hide");
         backButtonVisible = false;
       },
       onClick(cb: () => void) {

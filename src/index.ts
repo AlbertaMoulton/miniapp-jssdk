@@ -17,11 +17,15 @@ export { createTggRuntime, getSupportedCapabilities, installTggRuntime } from ".
 export { tgg as default } from "./sdk";
 
 export type {
-  MiniAppBridge,
+  BridgeTransport,
+  FlutterInAppWebViewBridge,
+  MiniAppCapabilityDefinition,
   MiniAppCommunityInfo,
+  MiniAppInvokeRequest,
+  MiniAppInvokeResponse,
   MiniAppMethod,
   MiniAppNativeError,
-  MiniAppRequest,
+  MiniAppPermission,
   MiniAppSDK,
   MiniAppSDKError,
   MiniAppSDKOptions,

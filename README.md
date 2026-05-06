@@ -6,7 +6,7 @@ JavaScript SDK for TeamGaga miniapps running inside the TeamGaga App Flutter Web
 
 This package now has two surfaces:
 
-- `dist/core.js`: runtime code for Flutter WebView `UserScript` injection. It mounts `window.tgg`, talks to the native `TeamgagaBridge`, manages callback promises, and exposes Mini App APIs.
+- `dist/core.js`: runtime code for Flutter WebView `UserScript` injection. It mounts `window.tgg`, talks to Flutter InAppWebView through `callHandler`, handles host events, and exposes Mini App APIs.
 - `@teamgaga/miniapp-jssdk`: developer-facing TypeScript SDK. It provides types, helper functions, and a typed `tgg` proxy that forwards to the injected `window.tgg`.
 
 The npm SDK does not create a fake runtime by default. In production, `window.tgg`
@@ -60,35 +60,57 @@ await runtime.getUserInfo();
 
 ## Flutter Host Integration
 
-Flutter should inject `dist/core.js` at document start. The host should expose
-`TeamgagaBridge.postMessage`.
-Each request includes a callback name such as `tgg_cb_1`. Native responses can
-be completed by calling that callback on the `TeamgagaBridge` object:
+Flutter should inject `dist/core.js` at document start with an InAppWebView
+`UserScript`. The host should register a JavaScript handler named
+`nativeBridge`:
+
+```dart
+controller.addJavaScriptHandler(
+  handlerName: 'nativeBridge',
+  callback: (args) async {
+    final payload = args.first as Map<String, dynamic>;
+    final method = payload['method'] as String;
+    final params = payload['params'] as Map<String, dynamic>?;
+
+    try {
+      final data = await dispatchMiniAppMethod(method, params);
+      return {'success': true, 'data': data};
+    } catch (error) {
+      return {
+        'success': false,
+        'error': {'message': error.toString()},
+      };
+    }
+  },
+);
+```
+
+H5 calls native through:
 
 ```js
-TeamgagaBridge.tgg_cb_1({
-  userId: "user-123",
-  avatar: "https://example.com/avatar.png",
-  username: "alice",
-  nickname: "Alice",
+window.flutter_inappwebview.callHandler("nativeBridge", {
+  id: "tgg_req_1",
+  method: "getUserInfo",
+  sdkVersion: "0.1.5",
+  timestamp: Date.now(),
 });
 ```
 
-The callback also accepts `{ success: true, data }` and rejects on
-`{ success: false, code, message }`. The injected runtime also exposes
-`window.tgg.resolve(id, value)` and `window.tgg.reject(id, error)` for host
-integrations that prefer an explicit runtime namespace.
+Native responses should use `{ success: true, data }` for success and
+`{ success: false, error: { code, message } }` for failures.
 
 ### Back button click events
 
 When the user taps the back button in the navigation bar, the Flutter host should
-notify the JS runtime by calling `window.tgg.receiveEvent("backButtonClicked")`.
+notify the JS runtime by calling `window.__tgg_emit("backButtonClicked")`.
 This is a host-only runtime entrypoint. The SDK's
 `BackButton.onClick(cb)` handlers will fire in response:
 
 ```dart
-// Flutter — on back button tap
-webViewController.runJavaScript('window.tgg.receiveEvent("backButtonClicked")');
+// Flutter, on back button tap
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("backButtonClicked")',
+);
 ```
 
 See the [BackButton event example](#mini-app-usage) above for the developer-side

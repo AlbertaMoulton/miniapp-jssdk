@@ -6,7 +6,7 @@
 
 TeamGaga MiniApp SDK 分为两层：
 
-- `core.js`：由 TeamGaga App 的 Flutter WebView 在运行时注入，负责创建 `window.tgg` 并和 Native 通信。
+- `core.js`：由 TeamGaga App 的 Flutter InAppWebView 在运行时注入，负责创建 `window.tgg`，并通过 `window.flutter_inappwebview.callHandler("nativeBridge", payload)` 和 Native 通信。
 - `@teamgaga/miniapp-jssdk`：发布到 npm，负责提供 TypeScript 类型、`tgg` 代理对象和便捷函数。
 
 小程序开发者通常只需要安装 npm 包：
@@ -750,23 +750,24 @@ tgg.appVersion: string
 
 以下 API 主要给 TeamGaga App / Flutter Host 使用。普通小程序业务代码不建议直接调用。
 
-### `tgg.receiveEvent(eventName, payload?)`
+### `window.__tgg_emit(eventName, payload?)`
 
 ```ts
-tgg.receiveEvent(eventName: TggEventName, payload?: unknown): void
+window.__tgg_emit(eventName: TggEventName | string, payload?: unknown): void
 ```
 
 使用场景：
 
 - Flutter Host 主动向小程序 runtime 派发事件。
-- 当前用于通知原生返回按钮点击。
+- 当前用于通知原生返回按钮点击、主题变化等事件。
+- 这是 Host 专用入口；小程序业务代码应使用 SDK 提供的事件 API，例如 `tgg.BackButton.onClick(cb)`。
 
 参数：
 
-| 参数        | 类型                  | 必填 | 说明                                       |
-| ----------- | --------------------- | ---- | ------------------------------------------ |
-| `eventName` | `"backButtonClicked"` | 是   | 事件名。当前仅支持 `"backButtonClicked"`。 |
-| `payload`   | `unknown`             | 否   | 事件数据。当前返回按钮事件不需要 payload。 |
+| 参数        | 类型                     | 必填 | 说明                                       |
+| ----------- | ------------------------ | ---- | ------------------------------------------ |
+| `eventName` | `TggEventName \| string` | 是   | 事件名，例如 `"backButtonClicked"`。       |
+| `payload`   | `unknown`                | 否   | 事件数据。返回按钮事件通常不需要 payload。 |
 
 返回值：
 
@@ -777,57 +778,66 @@ tgg.receiveEvent(eventName: TggEventName, payload?: unknown): void
 Flutter 示例：
 
 ```dart
-webViewController.runJavaScript('window.tgg.receiveEvent("backButtonClicked")');
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("backButtonClicked")',
+);
 ```
 
 类型：
 
 ```ts
-type TggEventName = "backButtonClicked";
-type TggEventPayload = undefined;
+type TggEventName = "backButtonClicked" | "themeChanged";
+type TggEventPayload = unknown;
 ```
 
-### `tgg.resolve(id, value)`
+### Flutter H5 调用 Native
 
-```ts
-tgg.resolve(id: string, value: unknown): void
+`core.js` 内部会通过 Flutter InAppWebView 调用 Native：
+
+```js
+window.flutter_inappwebview.callHandler("nativeBridge", {
+  id: "tgg_req_1",
+  method: "getUserInfo",
+  params: {},
+  sdkVersion: "0.1.5",
+  timestamp: Date.now(),
+});
 ```
 
-使用场景：
+Flutter Host 应使用 `addJavaScriptHandler` 注册同名 handler：
 
-- Host 侧手动完成某个 JS Bridge 请求。
-- 更推荐 Native 直接调用 `TeamgagaBridge.tgg_cb_1(value)`；该方法主要用于内部集成和测试。
+```dart
+controller.addJavaScriptHandler(
+  handlerName: 'nativeBridge',
+  callback: (args) async {
+    final payload = args.first as Map<String, dynamic>;
+    final method = payload['method'] as String;
+    final params = payload['params'] as Map<String, dynamic>?;
 
-参数：
-
-| 参数    | 类型      | 必填 | 说明                                  |
-| ------- | --------- | ---- | ------------------------------------- |
-| `id`    | `string`  | 是   | 请求 callback ID，例如 `"tgg_cb_1"`。 |
-| `value` | `unknown` | 是   | 返回给小程序的成功结果。              |
-
-返回值：
-
-| 类型   | 说明         |
-| ------ | ------------ |
-| `void` | 无返回数据。 |
-
-### `tgg.reject(id, error)`
-
-```ts
-tgg.reject(id: string, error: MiniAppNativeError | string): void
+    try {
+      final data = await dispatchMiniAppMethod(method, params);
+      return {'success': true, 'data': data};
+    } catch (error) {
+      return {
+        'success': false,
+        'error': {'message': error.toString()},
+      };
+    }
+  },
+);
 ```
 
-使用场景：
+Native 返回成功：
 
-- Host 侧手动拒绝某个 JS Bridge 请求。
-- 更推荐 Native 调用 callback 并传入 `{ success: false, code, message }`。
+```js
+{ success: true, data: { userId: "user-123" } }
+```
 
-参数：
+Native 返回失败：
 
-| 参数    | 类型                           | 必填 | 说明                                  |
-| ------- | ------------------------------ | ---- | ------------------------------------- |
-| `id`    | `string`                       | 是   | 请求 callback ID，例如 `"tgg_cb_1"`。 |
-| `error` | `MiniAppNativeError \| string` | 是   | 错误对象或错误消息。                  |
+```js
+{ success: false, error: { code: "USER_UNAVAILABLE", message: "User is unavailable" } }
+```
 
 `MiniAppNativeError` 字段：
 
@@ -835,12 +845,6 @@ tgg.reject(id: string, error: MiniAppNativeError | string): void
 | --------- | --------------------- | ----------------------------- |
 | `code`    | `string \| undefined` | Native 错误码；可能不存在。   |
 | `message` | `string \| undefined` | Native 错误描述；可能不存在。 |
-
-返回值：
-
-| 类型   | 说明         |
-| ------ | ------------ |
-| `void` | 无返回数据。 |
 
 ## 内部构建和测试 API
 
@@ -855,7 +859,7 @@ createMiniAppSDK(options?: MiniAppSDKOptions): MiniAppSDK
 使用场景：
 
 - SDK 内部创建 bridge-powered API 对象。
-- 测试时指定自定义 bridge 名称。
+- 测试时指定自定义 native handler、权限白名单或能力覆盖。
 
 参数：
 
@@ -865,9 +869,12 @@ createMiniAppSDK(options?: MiniAppSDKOptions): MiniAppSDK
 
 `MiniAppSDKOptions` 字段：
 
-| 字段         | 类型                  | 说明                                                  |
-| ------------ | --------------------- | ----------------------------------------------------- |
-| `bridgeName` | `string \| undefined` | Native bridge 全局对象名。默认是 `"TeamgagaBridge"`。 |
+| 字段           | 类型                                                  | 说明                                                   |
+| -------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| `handlerName`  | `string \| undefined`                                 | Flutter JavaScript handler 名。默认 `"nativeBridge"`。 |
+| `permissions`  | `readonly MiniAppPermission[] \| undefined`           | 当前小程序允许使用的权限白名单。                       |
+| `sdkVersion`   | `string \| undefined`                                 | SDK 版本。默认使用包内版本。                           |
+| `capabilities` | `readonly MiniAppCapabilityDefinition[] \| undefined` | 能力覆盖配置，可用于禁用或扩展能力。                   |
 
 返回值：`MiniAppSDK`。
 
@@ -890,13 +897,15 @@ createTggRuntime(options?: TggRuntimeOptions): TggWebApp
 
 `TggRuntimeOptions` 字段：
 
-| 字段         | 类型                  | 说明                                                |
-| ------------ | --------------------- | --------------------------------------------------- |
-| `appVersion` | `string \| undefined` | TeamGaga App 版本。默认空字符串。                   |
-| `bridgeName` | `string \| undefined` | Native bridge 全局对象名。默认 `"TeamgagaBridge"`。 |
-| `platform`   | `string \| undefined` | 平台标识。默认 `"web"`。                            |
-| `sdkVersion` | `string \| undefined` | SDK 版本。默认使用包内版本。                        |
-| `version`    | `string \| undefined` | core runtime 版本。默认使用包内版本。               |
+| 字段           | 类型                                                  | 说明                                                   |
+| -------------- | ----------------------------------------------------- | ------------------------------------------------------ |
+| `appVersion`   | `string \| undefined`                                 | TeamGaga App 版本。默认空字符串。                      |
+| `handlerName`  | `string \| undefined`                                 | Flutter JavaScript handler 名。默认 `"nativeBridge"`。 |
+| `permissions`  | `readonly MiniAppPermission[] \| undefined`           | 当前小程序允许使用的权限白名单。                       |
+| `platform`     | `string \| undefined`                                 | 平台标识。默认 `"web"`。                               |
+| `sdkVersion`   | `string \| undefined`                                 | SDK 版本。默认使用包内版本。                           |
+| `version`      | `string \| undefined`                                 | core runtime 版本。默认使用包内版本。                  |
+| `capabilities` | `readonly MiniAppCapabilityDefinition[] \| undefined` | 能力覆盖配置，可用于禁用或扩展能力。                   |
 
 返回值：`TggWebApp`，并会挂载到 `window.tgg`。
 
@@ -938,12 +947,11 @@ getSupportedCapabilities(): readonly MiniAppMethod[]
 ### `TggWebApp`
 
 ```ts
-type TggWebApp = Omit<MiniAppSDK, "bridgeName"> & {
+type TggWebApp = MiniAppSDK & {
   readonly version: string;
   readonly sdkVersion: string;
   readonly platform: string;
   readonly appVersion: string;
-  canIUse(capability: string): boolean;
 };
 ```
 

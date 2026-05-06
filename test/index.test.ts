@@ -1,242 +1,222 @@
 import { afterEach, beforeEach, expect, test, vi } from "vite-plus/test";
 
 import {
-  createTggRuntime,
   createMiniAppSDK,
+  createTggRuntime,
   default as defaultTgg,
-  getTgg,
-  getCommunityInfo,
   getCommunityId,
+  getCommunityInfo,
   getOauthCode,
   getSystemInfo,
-  tgg,
+  getTgg,
   getUserId,
   getUserInfo,
+  setHeaderColor,
+  tgg,
 } from "../src/index";
 
 type TestGlobal = typeof globalThis & Record<string, unknown>;
-type TestBridge = {
-  postMessage(message: string): void;
-  [callbackId: string]: unknown;
+type TestFlutterBridge = {
+  callHandler(handlerName: string, payload: unknown): Promise<unknown>;
 };
 
 const testGlobal = globalThis as TestGlobal;
 
 beforeEach(() => {
   vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-05-06T00:00:00.000Z"));
 });
 
 afterEach(() => {
   vi.useRealTimers();
   delete testGlobal.tgg;
-  delete testGlobal.TeamgagaBridge;
+  delete testGlobal.__tgg_emit;
+  delete testGlobal.flutter_inappwebview;
 });
 
-test("calls the Flutter WebView bridge with callback id and api name", async () => {
-  const messages: unknown[] = [];
-  testGlobal.TeamgagaBridge = {
-    postMessage(message: string) {
-      messages.push(JSON.parse(message));
+test("calls Flutter InAppWebView nativeBridge with invoke payload", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true, data: "user-123" };
     },
-  };
+  } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK();
-  const promise = sdk.getUserId();
+  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
 
-  expect(messages).toEqual([
-    {
-      callback: "tgg_cb_1",
-      api: "getUserId",
-    },
-  ]);
-
-  sdk.resolve("tgg_cb_1", "user-123");
-
-  await expect(promise).resolves.toBe("user-123");
+  await expect(sdk.getUserId()).resolves.toBe("user-123");
+  expect(calls).toHaveLength(1);
+  expect(calls[0].handlerName).toBe("nativeBridge");
+  expect(calls[0].payload).toMatchObject({
+    id: "tgg_req_1",
+    method: "getUserId",
+    sdkVersion: "0.1.5",
+    timestamp: new Date("2026-05-06T00:00:00.000Z").getTime(),
+  });
 });
 
-test("registers a callback on the tgg bridge for native responses", async () => {
-  testGlobal.TeamgagaBridge = {
-    postMessage() {},
-  };
+test("passes invoke params to Flutter InAppWebView", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
 
   const sdk = createMiniAppSDK();
-  const promise = sdk.getUserInfo();
-  const bridge = testGlobal.TeamgagaBridge as TestBridge;
 
-  expect(bridge.tgg_cb_1).toEqual(expect.any(Function));
+  await expect(sdk.setHeaderColor("bg_color")).resolves.toBeUndefined();
+  expect(calls[0]).toMatchObject({
+    handlerName: "nativeBridge",
+    payload: {
+      id: "tgg_req_1",
+      method: "setHeaderColor",
+      params: {
+        color: "bg_color",
+      },
+    },
+  });
+});
 
-  (bridge.tgg_cb_1 as (value: unknown) => void)({
+test("supports custom native handler names", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const sdk = createMiniAppSDK({ handlerName: "customNativeBridge" });
+
+  await expect(sdk.ready()).resolves.toBeUndefined();
+  expect(calls[0].handlerName).toBe("customNativeBridge");
+});
+
+test("normalizes successful native response envelopes", async () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return {
+        success: true,
+        data: {
+          userId: "user-123",
+          avatar: "https://example.com/avatar.png",
+          username: "alice",
+          nickname: "Alice",
+        },
+      };
+    },
+  } satisfies TestFlutterBridge;
+
+  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+
+  await expect(sdk.getUserInfo()).resolves.toEqual({
     userId: "user-123",
     avatar: "https://example.com/avatar.png",
     username: "alice",
     nickname: "Alice",
   });
-
-  await expect(promise).resolves.toEqual({
-    userId: "user-123",
-    avatar: "https://example.com/avatar.png",
-    username: "alice",
-    nickname: "Alice",
-  });
-  expect(bridge.tgg_cb_1).toBeUndefined();
 });
 
-test("bridge callbacks can reject native errors", async () => {
-  testGlobal.TeamgagaBridge = {
-    postMessage() {},
-  };
+test("rejects native error response envelopes", async () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return {
+        success: false,
+        error: { code: "USER_UNAVAILABLE", message: "User is unavailable" },
+      };
+    },
+  } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK();
-  const promise = sdk.getUserInfo();
-  const bridge = testGlobal.TeamgagaBridge as TestBridge;
+  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
 
-  (bridge.tgg_cb_1 as (value: unknown) => void)({
+  await expect(sdk.getUserInfo()).rejects.toMatchObject({
     code: "USER_UNAVAILABLE",
     message: "User is unavailable",
-    success: false,
   });
-
-  await expect(promise).rejects.toMatchObject({
-    code: "USER_UNAVAILABLE",
-    message: "User is unavailable",
-  });
-  expect(bridge.tgg_cb_1).toBeUndefined();
 });
 
-test("bridge callbacks parse JSON string responses", async () => {
-  testGlobal.TeamgagaBridge = {
-    postMessage() {},
-  };
+test("rejects native error response shorthand", async () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return {
+        success: false,
+        code: "OAUTH_UNAVAILABLE",
+        message: "OAuth is unavailable",
+      };
+    },
+  } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK();
-  const promise = sdk.getUserInfo();
-  const bridge = testGlobal.TeamgagaBridge as TestBridge;
+  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
 
-  (bridge.tgg_cb_1 as (value: unknown) => void)(
-    JSON.stringify({
-      userId: "user-123",
-      avatar: "https://example.com/avatar.png",
-      username: "alice",
-      nickname: "Alice",
-    }),
-  );
-
-  await expect(promise).resolves.toEqual({
-    userId: "user-123",
-    avatar: "https://example.com/avatar.png",
-    username: "alice",
-    nickname: "Alice",
+  await expect(sdk.getOauthCode()).rejects.toMatchObject({
+    code: "OAUTH_UNAVAILABLE",
+    message: "OAuth is unavailable",
   });
-  expect(bridge.tgg_cb_1).toBeUndefined();
 });
 
-test("exposes all known miniapp API methods", () => {
+test("parses JSON string native response envelopes", async () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return JSON.stringify({ success: true, data: "community-123" });
+    },
+  } satisfies TestFlutterBridge;
+
+  const sdk = createMiniAppSDK({ permissions: ["community:read"] });
+
+  await expect(sdk.getCommunityId()).resolves.toBe("community-123");
+});
+
+test("accepts primitive native responses as resolved values", async () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return "oauth-code-123";
+    },
+  } satisfies TestFlutterBridge;
+
+  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+
+  await expect(sdk.getOauthCode()).resolves.toBe("oauth-code-123");
+});
+
+test("exposes all known miniapp API helper methods", () => {
   expect(getOauthCode).toEqual(expect.any(Function));
   expect(getUserId).toEqual(expect.any(Function));
   expect(getUserInfo).toEqual(expect.any(Function));
   expect(getSystemInfo).toEqual(expect.any(Function));
   expect(getCommunityId).toEqual(expect.any(Function));
   expect(getCommunityInfo).toEqual(expect.any(Function));
+  expect(setHeaderColor).toEqual(expect.any(Function));
 });
 
 test("supports default imports as the typed runtime proxy", () => {
   expect(defaultTgg).toBe(tgg);
 });
 
-test("keeps callback ids unique when earlier requests finish out of order", async () => {
-  const messages: Array<{ callback: string; api: string }> = [];
-  testGlobal.TeamgagaBridge = {
-    postMessage(message: string) {
-      messages.push(JSON.parse(message) as { callback: string; api: string });
+test("keeps invoke ids unique across requests", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true, data: "ok" };
     },
-  };
+  } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK();
-  const userIdPromise = sdk.getUserId();
-  const communityIdPromise = sdk.getCommunityId();
+  const sdk = createMiniAppSDK({ permissions: ["user:read", "community:read"] });
 
-  sdk.resolve("tgg_cb_1", "user-123");
-  await expect(userIdPromise).resolves.toBe("user-123");
+  await sdk.getUserId();
+  await sdk.getCommunityId();
+  await sdk.getOauthCode();
 
-  const oauthCodePromise = sdk.getOauthCode();
-
-  expect(messages).toEqual([
-    {
-      callback: "tgg_cb_1",
-      api: "getUserId",
-    },
-    {
-      callback: "tgg_cb_2",
-      api: "getCommunityId",
-    },
-    {
-      callback: "tgg_cb_3",
-      api: "getOauthCode",
-    },
-  ]);
-
-  sdk.resolve("tgg_cb_2", "community-123");
-  sdk.resolve("tgg_cb_3", "oauth-code-123");
-
-  await expect(communityIdPromise).resolves.toBe("community-123");
-  await expect(oauthCodePromise).resolves.toBe("oauth-code-123");
+  expect(calls.map((call) => call.payload.id)).toEqual(["tgg_req_1", "tgg_req_2", "tgg_req_3"]);
 });
 
-test("rejects pending calls when native side reports an error", async () => {
-  testGlobal.TeamgagaBridge = {
-    postMessage() {},
-  };
-
-  const sdk = createMiniAppSDK();
-  const promise = sdk.getOauthCode();
-
-  sdk.reject("tgg_cb_1", {
-    message: "OAuth is unavailable",
-    code: "OAUTH_UNAVAILABLE",
-  });
-
-  await expect(promise).rejects.toMatchObject({
-    message: "OAuth is unavailable",
-    code: "OAUTH_UNAVAILABLE",
-  });
-});
-
-test("rejects when bridge is unavailable", async () => {
+test("rejects when Flutter InAppWebView bridge is unavailable", async () => {
   const sdk = createMiniAppSDK();
 
-  await expect(sdk.getCommunityId()).rejects.toThrow("TeamGaga miniapp bridge is unavailable");
-});
-
-test("allows custom bridge names for host integration tests", async () => {
-  const messages: unknown[] = [];
-  testGlobal.CustomMiniAppBridge = {
-    postMessage(message: string) {
-      messages.push(JSON.parse(message));
-    },
-  };
-
-  const sdk = createMiniAppSDK({ bridgeName: "CustomMiniAppBridge" });
-  const promise = sdk.getSystemInfo();
-
-  expect(messages).toEqual([
-    {
-      callback: "tgg_cb_1",
-      api: "getSystemInfo",
-    },
-  ]);
-
-  sdk.resolve("tgg_cb_1", {
-    platform: "ios",
-    appVersion: "1.0.0",
-  });
-
-  await expect(promise).resolves.toEqual({
-    platform: "ios",
-    appVersion: "1.0.0",
-  });
-
-  delete testGlobal.CustomMiniAppBridge;
+  await expect(sdk.ready()).rejects.toThrow("TeamGaga Flutter InAppWebView bridge is unavailable");
 });
 
 test("getTgg returns the injected runtime", () => {
@@ -269,8 +249,6 @@ test("tgg proxy forwards property access to the injected runtime", () => {
 });
 
 test("BackButton onClick fires callbacks when backButtonClicked is received", () => {
-  testGlobal.TeamgagaBridge = { postMessage() {} };
-
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
   sdk.BackButton.onClick(handler);
@@ -281,8 +259,6 @@ test("BackButton onClick fires callbacks when backButtonClicked is received", ()
 });
 
 test("BackButton offClick removes a registered callback", () => {
-  testGlobal.TeamgagaBridge = { postMessage() {} };
-
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
   sdk.BackButton.onClick(handler);
@@ -293,21 +269,7 @@ test("BackButton offClick removes a registered callback", () => {
   expect(handler).not.toHaveBeenCalled();
 });
 
-test("runtime BackButton.onClick fires when backButtonClicked is received", () => {
-  testGlobal.TeamgagaBridge = { postMessage() {} };
-
-  const runtime = createTggRuntime();
-  const handler = vi.fn();
-  runtime.BackButton.onClick(handler);
-
-  runtime.receiveEvent("backButtonClicked");
-
-  expect(handler).toHaveBeenCalledOnce();
-});
-
 test("receiveEvent fires all registered BackButton onClick handlers", () => {
-  testGlobal.TeamgagaBridge = { postMessage() {} };
-
   const sdk = createMiniAppSDK();
   const handler1 = vi.fn();
   const handler2 = vi.fn();
@@ -321,7 +283,6 @@ test("receiveEvent fires all registered BackButton onClick handlers", () => {
 });
 
 test("BackButton handlers are isolated when one handler throws", () => {
-  testGlobal.TeamgagaBridge = { postMessage() {} };
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
   const sdk = createMiniAppSDK();
@@ -343,8 +304,6 @@ test("BackButton handlers are isolated when one handler throws", () => {
 });
 
 test("BackButton dispatch uses a listener snapshot for the current event", () => {
-  testGlobal.TeamgagaBridge = { postMessage() {} };
-
   const sdk = createMiniAppSDK();
   const lateHandler = vi.fn();
   const firstHandler = vi.fn(() => {
@@ -363,9 +322,7 @@ test("BackButton dispatch uses a listener snapshot for the current event", () =>
   expect(lateHandler).toHaveBeenCalledOnce();
 });
 
-test("receiveEvent ignores unknown events", () => {
-  testGlobal.TeamgagaBridge = { postMessage() {} };
-
+test("receiveEvent ignores unknown events for typed SDK listeners", () => {
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
   sdk.BackButton.onClick(handler);
@@ -375,94 +332,171 @@ test("receiveEvent ignores unknown events", () => {
   expect(handler).not.toHaveBeenCalled();
 });
 
-test("creates and mounts the core runtime on window.tgg", async () => {
-  const messages: unknown[] = [];
-  testGlobal.TeamgagaBridge = {
-    postMessage(message: string) {
-      messages.push(JSON.parse(message));
+test("creates runtime and installs the Flutter event emitter", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
     },
-  };
+  } satisfies TestFlutterBridge;
 
   const runtime = createTggRuntime({
     appVersion: "3.2.0",
     platform: "ios",
-    version: "1.4.0",
+    permissions: ["system:read"],
   });
-  const promise = runtime.setHeaderColor("bg_color");
 
   expect(testGlobal.tgg).toBe(runtime);
+  expect(testGlobal.__tgg_emit).toEqual(expect.any(Function));
   expect(runtime.appVersion).toBe("3.2.0");
   expect(runtime.platform).toBe("ios");
-  expect(runtime.version).toBe("1.4.0");
-  expect(runtime.canIUse("setHeaderColor")).toBe(true);
-  expect(runtime.canIUse("BackButton.show")).toBe(true);
-  expect(messages).toEqual([
-    {
-      callback: "tgg_cb_1",
-      api: "setHeaderColor",
-      params: {
-        color: "bg_color",
+});
+
+test("runtime native APIs call Flutter InAppWebView", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+
+  await expect(runtime.ready()).resolves.toBeUndefined();
+  await expect(runtime.BackButton.show()).resolves.toBeUndefined();
+
+  expect(calls.map((call) => call.payload.method)).toEqual(["ready", "BackButton.show"]);
+});
+
+test("BackButton onClick fires through window.__tgg_emit", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const handler = vi.fn();
+  runtime.BackButton.onClick(handler);
+
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("backButtonClicked");
+
+  expect(handler).toHaveBeenCalledOnce();
+});
+
+test("window.__tgg_emit dispatches generic CustomEvent subscribers", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+  const dispatchEvent = vi.fn();
+  class TestCustomEvent {
+    readonly type: string;
+    readonly detail: unknown;
+
+    constructor(type: string, options: { detail: unknown }) {
+      this.type = type;
+      this.detail = options.detail;
+    }
+  }
+  (testGlobal as Record<string, unknown>).dispatchEvent = dispatchEvent;
+  (testGlobal as Record<string, unknown>).CustomEvent =
+    TestCustomEvent as unknown as typeof CustomEvent;
+
+  createTggRuntime();
+
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("themeChanged", {
+    colorScheme: "dark",
+  });
+
+  expect(dispatchEvent).toHaveBeenCalledOnce();
+  expect(dispatchEvent.mock.calls[0][0]).toMatchObject({
+    type: "tgg:event",
+    detail: {
+      eventName: "themeChanged",
+      payload: {
+        colorScheme: "dark",
       },
     },
-  ]);
+  });
 
-  runtime.resolve("tgg_cb_1", undefined);
-
-  await expect(promise).resolves.toBeUndefined();
+  delete (testGlobal as Record<string, unknown>).dispatchEvent;
+  delete (testGlobal as Record<string, unknown>).CustomEvent;
 });
 
-test("core runtime exposes ready and BackButton APIs without setTitle", async () => {
-  const messages: unknown[] = [];
-  testGlobal.TeamgagaBridge = {
-    postMessage(message: string) {
-      messages.push(JSON.parse(message));
+test("window.__tgg_emit skips CustomEvent dispatch when unavailable", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
     },
-  };
+  } satisfies TestFlutterBridge;
 
-  const runtime = createTggRuntime();
-  const runtimeRecord = runtime as unknown as Record<string, unknown>;
+  createTggRuntime();
 
-  void runtime.ready();
-  const backButtonPromise = runtime.BackButton.show();
-
-  expect(runtime.canIUse("setTitle")).toBe(false);
-  expect(runtimeRecord.setTitle).toBeUndefined();
-  expect(messages).toEqual([
-    {
-      callback: "tgg_cb_1",
-      api: "ready",
-    },
-    {
-      callback: "tgg_cb_2",
-      api: "BackButton.show",
-    },
-  ]);
-
-  runtime.resolve("tgg_cb_2", undefined);
-
-  await expect(backButtonPromise).resolves.toBeUndefined();
+  expect(() => {
+    (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("themeChanged", {
+      colorScheme: "dark",
+    });
+  }).not.toThrow();
 });
 
-test("close asks the native host to close the Mini App", async () => {
-  const messages: unknown[] = [];
-  testGlobal.TeamgagaBridge = {
-    postMessage(message: string) {
-      messages.push(JSON.parse(message));
+test("canIUse respects permission requirements", () => {
+  const runtime = createTggRuntime({ permissions: ["system:read"] });
+
+  expect(runtime.canIUse("getSystemInfo")).toBe(true);
+  expect(runtime.canIUse("getUserInfo")).toBe(false);
+  expect(runtime.canIUse("setHeaderColor")).toBe(true);
+  expect(runtime.canIUse("unknown")).toBe(false);
+});
+
+test("canIUse respects disabled capability overrides", () => {
+  const runtime = createTggRuntime({
+    capabilities: [{ name: "setHeaderColor", enabled: false }],
+  });
+
+  expect(runtime.canIUse("setHeaderColor")).toBe(false);
+});
+
+test("protected methods reject locally when permission is missing", async () => {
+  const calls: unknown[] = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(_handlerName: string, payload: unknown) {
+      calls.push(payload);
+      return {
+        success: true,
+        data: {
+          userId: "user-123",
+          avatar: "https://example.com/avatar.png",
+          username: "alice",
+          nickname: "Alice",
+        },
+      };
     },
-  };
+  } satisfies TestFlutterBridge;
 
   const runtime = createTggRuntime();
-  const closePromise = runtime.close();
 
-  expect(runtime.canIUse("close")).toBe(true);
-  expect(messages).toEqual([
-    {
-      callback: "tgg_cb_1",
-      api: "close",
-    },
+  await expect(runtime.getUserInfo()).rejects.toMatchObject({
+    code: "PERMISSION_DENIED",
+  });
+  expect(calls).toEqual([]);
+});
+
+test("getSupportedCapabilities returns native method capabilities", async () => {
+  const { getSupportedCapabilities } = await import("../src/index");
+
+  expect(getSupportedCapabilities()).toEqual([
+    "ready",
+    "close",
+    "setHeaderColor",
+    "BackButton.show",
+    "BackButton.hide",
+    "getOauthCode",
+    "getUserId",
+    "getUserInfo",
+    "getSystemInfo",
+    "getCommunityId",
+    "getCommunityInfo",
   ]);
-
-  runtime.resolve("tgg_cb_1", undefined);
-
-  await expect(closePromise).resolves.toBeUndefined();
 });

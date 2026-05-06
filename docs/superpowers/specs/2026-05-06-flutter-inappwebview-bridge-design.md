@@ -79,7 +79,7 @@ Flutter to call private SDK internals.
 All native calls should go through:
 
 ```ts
-window.flutter_inappwebview.callHandler("nativeBridge", request)
+window.flutter_inappwebview.callHandler("nativeBridge", request);
 ```
 
 The request shape should be:
@@ -256,4 +256,3 @@ Expected stable developer API:
 - `tgg.getUserInfo()`
 - `tgg.BackButton.onClick(cb)`
 - `tgg.canIUse(capability)`
-
