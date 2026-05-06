@@ -1,0 +1,259 @@
+# Flutter InAppWebView Bridge Refactor Design
+
+## Goal
+
+Refactor the SDK around a clean Flutter InAppWebView miniapp container protocol.
+This is a from-zero-to-one container implementation, so the code should not keep
+legacy `TeamgagaBridge.postMessage` behavior, callback-id response handling, or
+compatibility branches.
+
+The target split is:
+
+- `core.js` is the injected platform protocol layer. It mounts `window.tgg`,
+  owns native transport calls, exposes host-only event entrypoints, and enforces
+  version, capability, and permission checks.
+- `@teamgaga/miniapp-jssdk` is the developer-facing TypeScript SDK. It provides
+  types, helpers, and a typed proxy to the injected runtime.
+- Flutter owns native capability execution through
+  `window.flutter_inappwebview.callHandler("nativeBridge", payload)` and pushes
+  events to H5 with `evaluateJavascript`.
+
+## Non-Goals
+
+- Do not support `TeamgagaBridge.postMessage`.
+- Do not preserve callback ids such as `tgg_cb_1`.
+- Do not use `postMessage` as the H5-to-Flutter bridge.
+- Do not add iframe sandbox transport in this refactor. It can be introduced
+  later as a separate web-internal transport if the product needs sandboxed
+  miniapps.
+
+## Architecture
+
+The runtime stack should be:
+
+```text
+Miniapp H5
+  -> @teamgaga/miniapp-jssdk
+  -> window.tgg
+  -> core.js protocol runtime
+  -> FlutterInAppWebViewTransport
+  -> window.flutter_inappwebview.callHandler("nativeBridge", request)
+  -> Flutter native handler
+```
+
+Flutter-to-H5 events should use:
+
+```text
+Flutter controller.evaluateJavascript(...)
+  -> window.__tgg_emit(eventName, payload)
+  -> core runtime event dispatch
+  -> SDK listeners and CustomEvent subscribers
+```
+
+`postMessage` remains a possible future mechanism for web-internal iframe or
+sandbox communication, but it is not part of the current bridge protocol.
+
+## Public Runtime Surface
+
+`core.js` should mount `window.tgg` at document start.
+
+`window.tgg` should expose:
+
+- `invoke(method, params?)`
+- high-level API methods such as `ready`, `close`, `getUserInfo`,
+  `getSystemInfo`, and `BackButton.show`
+- `canIUse(capability)`
+- version metadata: `version`, `sdkVersion`, `appVersion`, `platform`
+- event APIs already present on the SDK, including `BackButton.onClick`
+
+`core.js` should also mount a host-only global:
+
+- `window.__tgg_emit(eventName, payload?)`
+
+Flutter should call `window.__tgg_emit` from `evaluateJavascript` for events
+such as back button clicks and theme changes. The runtime should not require
+Flutter to call private SDK internals.
+
+## H5 To Flutter Protocol
+
+All native calls should go through:
+
+```ts
+window.flutter_inappwebview.callHandler("nativeBridge", request)
+```
+
+The request shape should be:
+
+```ts
+type MiniAppInvokeRequest = {
+  id: string;
+  method: MiniAppMethod;
+  params?: Record<string, unknown>;
+  sdkVersion: string;
+  timestamp: number;
+};
+```
+
+The response shape should be normalized by `core.js`:
+
+```ts
+type MiniAppInvokeResponse<T = unknown> =
+  | {
+      success: true;
+      data?: T;
+    }
+  | {
+      success: false;
+      error?: {
+        code?: string;
+        message?: string;
+      };
+      code?: string;
+      message?: string;
+    };
+```
+
+The transport should accept direct primitive/object responses as a convenience,
+but the documented Flutter contract should be the `success/data/error` envelope.
+
+## Flutter To H5 Protocol
+
+Flutter should emit events with `evaluateJavascript`:
+
+```js
+window.__tgg_emit("backButtonClicked", undefined);
+window.__tgg_emit("themeChanged", { colorScheme: "dark" });
+```
+
+The runtime should:
+
+- route known SDK events to typed SDK listeners
+- dispatch a browser `CustomEvent` for generic event subscribers
+- isolate listener failures so one failing handler does not block other handlers
+- ignore unknown events unless a generic subscriber is listening
+
+## Version And Capability Detection
+
+Capabilities should be modeled as data rather than hard-coded checks scattered
+through API methods.
+
+The runtime should maintain a capability registry with:
+
+- capability name
+- minimum app version when applicable
+- permission requirement when applicable
+- whether the capability is currently enabled
+
+`canIUse(capability)` should return `true` only when:
+
+- the runtime knows the capability
+- the current app version satisfies the minimum version if one exists
+- the capability is enabled
+- permission requirements are satisfied or not required
+
+The initial app version should come from `createTggRuntime(options)` so Flutter
+can inject host metadata when installing `core.js`.
+
+## Permission Whitelist
+
+The runtime should support a permission whitelist supplied at install time:
+
+```ts
+createTggRuntime({
+  permissions: ["user:read", "system:read"],
+});
+```
+
+Before invoking a protected native method, the runtime should reject locally with
+a `MiniAppSDKError` if the permission is missing. This gives miniapp developers
+a deterministic error without relying on Flutter to reject every unauthorized
+call.
+
+Initial permission mapping:
+
+- `getUserId`, `getUserInfo`, `getOauthCode`: `user:read`
+- `getSystemInfo`: `system:read`
+- `getCommunityId`, `getCommunityInfo`: `community:read`
+- navigation and lifecycle methods such as `ready`, `close`,
+  `setHeaderColor`, and `BackButton.show/hide`: no permission by default
+
+## File-Level Design
+
+`src/bridge.ts`
+
+- Replace the old `MiniAppBridge.postMessage` implementation with a
+  `BridgeTransport` abstraction.
+- Implement only `FlutterInAppWebViewTransport`.
+- Detect missing `window.flutter_inappwebview.callHandler` and reject with a
+  clear SDK error.
+- Normalize response envelopes and native error shapes.
+
+`src/types.ts`
+
+- Remove the legacy `MiniAppBridge` shape.
+- Add request, response, transport, capability, permission, and runtime option
+  types.
+- Add `invoke` to the public `TggWebApp` type.
+
+`src/core-runtime.ts`
+
+- Create the runtime, mount `window.tgg`, and install `window.__tgg_emit`.
+- Own capability and permission checks before transport calls.
+- Keep SDK-facing methods thin: each method delegates to `invoke`.
+
+`src/sdk.ts`
+
+- Preserve developer-facing imports and the typed `tgg` proxy.
+- Remove `resolve` and `reject` APIs from the developer/runtime surface because
+  native responses now resolve the `callHandler` promise directly.
+- Keep `BackButton` listener ergonomics.
+
+`src/core.ts`
+
+- Continue to auto-install the runtime for the injected `dist/core.js` bundle.
+
+`README.md` and `docs/developer-api.md`
+
+- Document Flutter InAppWebView setup with `UserScript`,
+  `addJavaScriptHandler`, `callHandler`, `evaluateJavascript`, and
+  `window.__tgg_emit`.
+- Remove old `TeamgagaBridge.postMessage` integration examples.
+
+## Testing
+
+Tests should cover:
+
+- SDK proxy still forwards to injected `window.tgg`.
+- `createTggRuntime` mounts `window.tgg` and `window.__tgg_emit`.
+- H5-to-Flutter invokes
+  `window.flutter_inappwebview.callHandler("nativeBridge", request)`.
+- successful native response normalization.
+- native error response normalization.
+- missing Flutter bridge rejection.
+- `BackButton.onClick` fires through `window.__tgg_emit("backButtonClicked")`.
+- `canIUse` respects known capabilities, app version, enabled flags, and
+  permissions.
+- protected methods reject when permission is missing.
+- package exports still publish SDK and core bundles.
+
+## Migration Effect
+
+This is a breaking protocol change for the host integration, which is acceptable
+because the product is being built from zero to one.
+
+Expected removals:
+
+- `TeamgagaBridge`
+- `postMessage` transport
+- callback ids on the bridge object
+- `window.tgg.resolve`
+- `window.tgg.reject`
+
+Expected stable developer API:
+
+- `import { tgg } from "@teamgaga/miniapp-jssdk"`
+- `tgg.ready()`
+- `tgg.getUserInfo()`
+- `tgg.BackButton.onClick(cb)`
+- `tgg.canIUse(capability)`
+
