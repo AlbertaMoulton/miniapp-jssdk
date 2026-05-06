@@ -79,6 +79,17 @@ task.onProgressUpdate(({ progress }) => {
 task.abort();
 ```
 
+Listen for clipboard text returned by the Flutter host:
+
+```ts
+const offClipboard = tgg.onClipboardTextReceived(({ data }) => {
+  console.log(data);
+});
+
+// Remove the listener when the page no longer needs it.
+offClipboard();
+```
+
 For explicit access:
 
 ```ts
@@ -139,6 +150,7 @@ The runtime performs local checks before native calls:
 - header color validation for `"bg_color"`, `"secondary_bg_color"`, or `#RRGGBB`
 - duplicate `BackButton.show()` / `BackButton.hide()` calls are skipped when the visible state is unchanged
 - file download progress and completion are delivered through `window.__tgg_emit`
+- clipboard text results are delivered through `window.__tgg_emit`
 
 ### Back button click events
 
@@ -187,6 +199,19 @@ Cancelling a download calls native with:
   params: { taskId: "tgg_download_1" }
 }
 ```
+
+### Clipboard text events
+
+Flutter can return clipboard text to H5 with:
+
+```dart
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("clipboardTextReceived", {"data":"copied text"})',
+);
+```
+
+If no text is available, emit `{"data":null}` or omit `data`; SDK callbacks will
+receive `{ data: null }`.
 
 ## Release
 

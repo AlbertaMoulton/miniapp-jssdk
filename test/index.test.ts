@@ -348,6 +348,39 @@ test("onEvent deduplicates callbacks for the same event", () => {
   expect(handler).toHaveBeenCalledOnce();
 });
 
+test("onClipboardTextReceived receives clipboard data from native events", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  const off = sdk.onClipboardTextReceived(handler);
+  sdk.receiveEvent("clipboardTextReceived", { data: "hello" });
+  off();
+  sdk.receiveEvent("clipboardTextReceived", { data: "ignored" });
+
+  expect(handler).toHaveBeenCalledOnce();
+  expect(handler).toHaveBeenCalledWith({ data: "hello" });
+});
+
+test("onClipboardTextReceived normalizes missing clipboard data to null", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  sdk.onClipboardTextReceived(handler);
+  sdk.receiveEvent("clipboardTextReceived", {});
+
+  expect(handler).toHaveBeenCalledWith({ data: null });
+});
+
+test("generic onEvent can observe clipboardTextReceived events", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  sdk.onEvent("clipboardTextReceived", handler);
+  sdk.receiveEvent("clipboardTextReceived", { data: "copied" });
+
+  expect(handler).toHaveBeenCalledWith({ data: "copied" });
+});
+
 test("BackButton handlers are isolated when one handler throws", () => {
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 

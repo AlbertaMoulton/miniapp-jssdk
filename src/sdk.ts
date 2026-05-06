@@ -4,6 +4,8 @@ import { createMiniAppError } from "./errors";
 import { getRuntimeGlobal } from "./runtime";
 import type {
   CapabilityConfig,
+  ClipboardTextReceivedCallback,
+  ClipboardTextReceivedResult,
   CommunityInfo,
   DownloadFileCompleteResult,
   DownloadFileFailResult,
@@ -23,6 +25,7 @@ import type {
 } from "./types";
 
 const BACK_BUTTON_CLICKED_EVENT: TggEventName = "backButtonClicked";
+const CLIPBOARD_TEXT_RECEIVED_EVENT: TggEventName = "clipboardTextReceived";
 const DOWNLOAD_ABORT_MESSAGE = "downloadFile:abort";
 const DOWNLOAD_OK_MESSAGE = "downloadFile:ok";
 const DOWNLOAD_FILE_NAME_ERROR_MESSAGE = "downloadFile:fail invalid fileName";
@@ -52,6 +55,7 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "downloadFileProgress" },
   { name: "downloadFileSuccess" },
   { name: "downloadFileFail" },
+  { name: "clipboardTextReceived" },
 ];
 
 export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
@@ -164,6 +168,15 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
       return;
     }
 
+    if (eventName === "clipboardTextReceived") {
+      emitEvent(eventName, getClipboardTextReceivedResult(payload));
+      return;
+    }
+
+    emitEvent(eventName, payload);
+  };
+
+  const emitEvent = (eventName: TggEventName, payload?: unknown): void => {
     const handlers = Array.from(eventHandlers.get(eventName) ?? []);
     handlers.forEach((handler) => {
       try {
@@ -246,6 +259,17 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     },
   });
 
+  const onClipboardTextReceived = (callback: ClipboardTextReceivedCallback): (() => void) => {
+    const handler = (payload?: unknown): void => {
+      callback(getClipboardTextReceivedResult(payload));
+    };
+
+    onEvent(CLIPBOARD_TEXT_RECEIVED_EVENT, handler);
+    return () => {
+      offEvent(CLIPBOARD_TEXT_RECEIVED_EVENT, handler);
+    };
+  };
+
   const receiveDownloadFileProgress = (payload: unknown): void => {
     const taskId = getStringValue(payload, "taskId");
     const progress = getNumberValue(payload, "progress");
@@ -315,6 +339,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     getCommunityId: () => invoke<string>("getCommunityId"),
     getCommunityInfo: () => invoke<CommunityInfo>("getCommunityInfo"),
     downloadFile,
+    onClipboardTextReceived,
     receiveEvent,
     BackButton: {
       get isVisible() {
@@ -368,6 +393,12 @@ const settleDownloadFileFail = (taskState: DownloadTaskState, errMsg: string): v
   taskState.settled = true;
   taskState.options.fail?.(result);
   taskState.options.complete?.(result);
+};
+
+const getClipboardTextReceivedResult = (payload: unknown): ClipboardTextReceivedResult => {
+  return {
+    data: getStringValue(payload, "data") ?? null,
+  };
 };
 
 const getDownloadFileValidationError = (options: DownloadFileOptions): string | undefined => {

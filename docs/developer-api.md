@@ -327,6 +327,49 @@ task.abort();
 - `abort()` 会调用 Native 的 `abortDownloadFile`，并以 `downloadFile:abort` 触发 `fail` 和 `complete`。
 - 如果 `url` 或 `fileName` 不合法，SDK 会本地触发 `fail` 和 `complete`，不会调用 Native。
 
+## 剪贴板 API
+
+### `tgg.onClipboardTextReceived(callback)`
+
+```ts
+tgg.onClipboardTextReceived(
+  callback: (res: { data: string | null }) => void,
+): () => void
+```
+
+使用场景：
+
+- 监听 Flutter Host 返回给 H5 的剪贴板文本。
+- 适合 Native 侧已经读取剪贴板，并通过 `window.__tgg_emit("clipboardTextReceived", payload)` 回推结果的场景。
+
+参数：
+
+| 参数       | 类型                                      | 必填 | 说明                   |
+| ---------- | ----------------------------------------- | ---- | ---------------------- |
+| `callback` | `(res: { data: string \| null }) => void` | 是   | 收到剪贴板文本时执行。 |
+
+返回值：
+
+| 类型         | 说明           |
+| ------------ | -------------- |
+| `() => void` | 取消监听函数。 |
+
+示例：
+
+```ts
+const offClipboard = tgg.onClipboardTextReceived(({ data }) => {
+  console.log(data);
+});
+
+offClipboard();
+```
+
+注意：
+
+- 字段名沿用 Telegram Mini App 的 `data` 习惯。
+- 如果 Host 没有返回文本，SDK 会把回调参数规范化为 `{ data: null }`。
+- 这是事件监听 API，不会主动读取剪贴板；如果后续需要主动读取，可以单独增加读取方法。
+
 ## 导航栏 API
 
 TeamGaga 参考 Telegram Mini App 的顶部导航栏策略，不提供动态 `setTitle` 能力：
@@ -801,27 +844,28 @@ tgg.canIUse(capability: string): boolean
 
 当前可检测能力：
 
-| 能力名                   | 说明                       |
-| ------------------------ | -------------------------- |
-| `"init"`                 | SDK / Native bridge 握手。 |
-| `"ready"`                | 页面 ready 通知。          |
-| `"close"`                | 关闭当前 Mini App。        |
-| `"setHeaderColor"`       | 设置原生导航栏颜色。       |
-| `"BackButton.show"`      | 展示原生返回按钮。         |
-| `"BackButton.hide"`      | 隐藏原生返回按钮。         |
-| `"getOauthCode"`         | 获取 OAuth code。          |
-| `"getUserId"`            | 获取用户 ID。              |
-| `"getUserInfo"`          | 获取用户基础信息。         |
-| `"getSystemInfo"`        | 获取系统信息。             |
-| `"getCommunityId"`       | 获取社群 ID。              |
-| `"getCommunityInfo"`     | 获取社群基础信息。         |
-| `"downloadFile"`         | 下载远程文件。             |
-| `"abortDownloadFile"`    | 取消下载任务。             |
-| `"themeChanged"`         | 主题变化事件能力。         |
-| `"backButtonClicked"`    | 原生返回按钮点击事件能力。 |
-| `"downloadFileProgress"` | 下载进度事件能力。         |
-| `"downloadFileSuccess"`  | 下载成功事件能力。         |
-| `"downloadFileFail"`     | 下载失败事件能力。         |
+| 能力名                    | 说明                       |
+| ------------------------- | -------------------------- |
+| `"init"`                  | SDK / Native bridge 握手。 |
+| `"ready"`                 | 页面 ready 通知。          |
+| `"close"`                 | 关闭当前 Mini App。        |
+| `"setHeaderColor"`        | 设置原生导航栏颜色。       |
+| `"BackButton.show"`       | 展示原生返回按钮。         |
+| `"BackButton.hide"`       | 隐藏原生返回按钮。         |
+| `"getOauthCode"`          | 获取 OAuth code。          |
+| `"getUserId"`             | 获取用户 ID。              |
+| `"getUserInfo"`           | 获取用户基础信息。         |
+| `"getSystemInfo"`         | 获取系统信息。             |
+| `"getCommunityId"`        | 获取社群 ID。              |
+| `"getCommunityInfo"`      | 获取社群基础信息。         |
+| `"downloadFile"`          | 下载远程文件。             |
+| `"abortDownloadFile"`     | 取消下载任务。             |
+| `"themeChanged"`          | 主题变化事件能力。         |
+| `"backButtonClicked"`     | 原生返回按钮点击事件能力。 |
+| `"downloadFileProgress"`  | 下载进度事件能力。         |
+| `"downloadFileSuccess"`   | 下载成功事件能力。         |
+| `"downloadFileFail"`      | 下载失败事件能力。         |
+| `"clipboardTextReceived"` | 剪贴板文本返回事件能力。   |
 
 示例：
 
@@ -1019,7 +1063,8 @@ type TggEventName =
   | "themeChanged"
   | "downloadFileProgress"
   | "downloadFileSuccess"
-  | "downloadFileFail";
+  | "downloadFileFail"
+  | "clipboardTextReceived";
 type TggEventPayload = unknown;
 ```
 
@@ -1034,6 +1079,14 @@ controller.evaluateJavascript(
 );
 controller.evaluateJavascript(
   source: 'window.__tgg_emit("downloadFileFail", {"taskId":"tgg_download_1","errMsg":"download failed"})',
+);
+```
+
+剪贴板事件示例：
+
+```dart
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("clipboardTextReceived", {"data":"copied text"})',
 );
 ```
 
@@ -1242,7 +1295,8 @@ type TggCapability =
   | "backButtonClicked"
   | "downloadFileProgress"
   | "downloadFileSuccess"
-  | "downloadFileFail";
+  | "downloadFileFail"
+  | "clipboardTextReceived";
 ```
 
 ### `TggBackButton`

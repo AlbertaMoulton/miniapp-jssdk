@@ -18,6 +18,8 @@ export { tgg as default } from "./sdk";
 
 export type {
   BridgeTransport,
+  ClipboardTextReceivedCallback,
+  ClipboardTextReceivedResult,
   FlutterInAppWebViewBridge,
   CapabilityConfig,
   CommunityInfo,

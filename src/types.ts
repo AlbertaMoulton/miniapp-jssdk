@@ -24,14 +24,16 @@ export type TggCapability =
   | "backButtonClicked"
   | "downloadFileProgress"
   | "downloadFileSuccess"
-  | "downloadFileFail";
+  | "downloadFileFail"
+  | "clipboardTextReceived";
 
 export type TggEventName =
   | "backButtonClicked"
   | "themeChanged"
   | "downloadFileProgress"
   | "downloadFileSuccess"
-  | "downloadFileFail";
+  | "downloadFileFail"
+  | "clipboardTextReceived";
 
 export type TggEventPayload = unknown;
 
@@ -135,6 +137,12 @@ export type DownloadTask = {
   offProgressUpdate(callback: DownloadTaskCallback): void;
 };
 
+export type ClipboardTextReceivedResult = {
+  data: string | null;
+};
+
+export type ClipboardTextReceivedCallback = (res: ClipboardTextReceivedResult) => void;
+
 export type MiniAppSDK = {
   invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
   canIUse(capability: string): boolean;
@@ -152,6 +160,7 @@ export type MiniAppSDK = {
   getCommunityId(): Promise<string>;
   getCommunityInfo(): Promise<CommunityInfo>;
   downloadFile(options: DownloadFileOptions): DownloadTask;
+  onClipboardTextReceived(callback: ClipboardTextReceivedCallback): () => void;
   BackButton: TggBackButton;
   receiveEvent(eventName: TggEventName, payload?: unknown): void;
 };
