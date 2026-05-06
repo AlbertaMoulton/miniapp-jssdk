@@ -20,8 +20,12 @@ npm install @teamgaga/miniapp-jssdk
 ```ts
 import { tgg } from "@teamgaga/miniapp-jssdk";
 
-tgg.ready();
+const initData = await tgg.init();
+console.log(initData.platform, initData.colorScheme);
+
+// 拉取业务数据并渲染页面。
 await tgg.setHeaderColor("bg_color");
+await tgg.ready();
 await tgg.close();
 ```
 
@@ -141,6 +145,52 @@ import {
 
 ## 生命周期 API
 
+### `tgg.init()`
+
+```ts
+tgg.init(): Promise<InitData>
+```
+
+使用场景：
+
+- 小程序启动时和 Flutter bridge 完成握手。
+- 获取启动上下文、App 版本、SDK 版本、颜色模式和平台信息。
+- 在拉取业务数据、渲染页面之前调用。
+
+语义：
+
+- `init()` 表示 SDK / Native bridge 已准备好，并返回启动上下文。
+- `ready()` 表示 H5 页面已完成首屏准备，可以通知 Native 关闭 loading 或恢复交互。
+
+返回值：
+
+| 类型                | 说明                    |
+| ------------------- | ----------------------- |
+| `Promise<InitData>` | Native 返回的启动数据。 |
+
+`InitData` 字段：
+
+| 字段            | 类型                                   | 说明                                     |
+| --------------- | -------------------------------------- | ---------------------------------------- |
+| `appVersion`    | `string`                               | TeamGaga App 版本。                      |
+| `sdkVersion`    | `string`                               | Native / 容器侧 SDK 版本。               |
+| `colorScheme`   | `"light" \| "dark"`                    | 当前颜色模式。                           |
+| `platform`      | `string`                               | 平台标识，例如 `"ios"`。                 |
+| `launchContext` | `Record<string, unknown> \| undefined` | 启动上下文，可放来源、场景、业务参数等。 |
+
+示例：
+
+```ts
+const initData = await tgg.init();
+
+if (initData.launchContext?.communityId) {
+  // 拉取社群相关数据
+}
+
+// 页面数据和首屏 UI 准备好后再通知 Native。
+await tgg.ready();
+```
+
 ### `tgg.ready()`
 
 ```ts
@@ -151,6 +201,7 @@ tgg.ready(): Promise<void>
 
 - 小程序页面初始化完成后通知 TeamGaga App。
 - App 可在收到该调用后关闭 loading、统计启动完成、恢复交互状态。
+- 应在 `tgg.init()` 完成，且页面数据和首屏 UI 准备好之后调用。
 
 参数：无。
 
@@ -669,6 +720,7 @@ tgg.canIUse(capability: string): boolean
 
 | 能力名                | 说明                       |
 | --------------------- | -------------------------- |
+| `"init"`              | SDK / Native bridge 握手。 |
 | `"ready"`             | 页面 ready 通知。          |
 | `"close"`             | 关闭当前 Mini App。        |
 | `"setHeaderColor"`    | 设置原生导航栏颜色。       |
@@ -885,7 +937,7 @@ type TggEventPayload = unknown;
 ```js
 window.flutter_inappwebview.callHandler("nativeBridge", {
   id: "tgg_req_1",
-  method: "getUserInfo",
+  method: "init",
   params: {},
   sdkVersion: "0.1.5",
   timestamp: Date.now(),
@@ -918,7 +970,16 @@ controller.addJavaScriptHandler(
 Native 返回成功：
 
 ```js
-{ success: true, data: { userId: "user-123" } }
+{
+  success: true,
+  data: {
+    appVersion: "3.4.0",
+    sdkVersion: "0.2.0",
+    colorScheme: "dark",
+    platform: "ios",
+    launchContext: { scene: "community" }
+  }
+}
 ```
 
 Native 返回失败：
@@ -1041,6 +1102,7 @@ type TggWebApp = MiniAppSDK & {
   readonly sdkVersion: string;
   readonly platform: string;
   readonly appVersion: string;
+  readonly colorScheme: TggColorScheme;
 };
 ```
 
@@ -1048,6 +1110,7 @@ type TggWebApp = MiniAppSDK & {
 
 ```ts
 type MiniAppMethod =
+  | "init"
   | "ready"
   | "close"
   | "setHeaderColor"

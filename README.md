@@ -37,7 +37,10 @@ The build emits SDK bundles and WebView runtime bundles:
 ```ts
 import { tgg } from "@teamgaga/miniapp-jssdk";
 
-tgg.ready();
+const initData = await tgg.init();
+console.log(initData.platform, initData.colorScheme);
+
+// Fetch data and render the miniapp UI.
 await tgg.setHeaderColor("bg_color");
 tgg.BackButton.show();
 tgg.BackButton.onClick(() => {
@@ -46,6 +49,8 @@ tgg.BackButton.onClick(() => {
 if (tgg.canIUse("setHeaderColor") && tgg.isVersionAtLeast("3.2.0")) {
   await tgg.setHeaderColor("#18A0FB");
 }
+
+await tgg.ready();
 await tgg.close();
 ```
 
@@ -93,7 +98,7 @@ H5 calls native through:
 ```js
 window.flutter_inappwebview.callHandler("nativeBridge", {
   id: "tgg_req_1",
-  method: "getUserInfo",
+  method: "init",
   sdkVersion: "0.1.5",
   timestamp: Date.now(),
 });

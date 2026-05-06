@@ -5,6 +5,7 @@ import { getRuntimeGlobal } from "./runtime";
 import type {
   CapabilityConfig,
   CommunityInfo,
+  InitData,
   MiniAppMethod,
   MiniAppSDK,
   MiniAppSDKOptions,
@@ -22,6 +23,7 @@ const PERMISSION_DENIED_CODE = "PERMISSION_DENIED";
 const UNSUPPORTED_CAPABILITY_CODE = "UNSUPPORTED_CAPABILITY";
 
 export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
+  { name: "init" },
   { name: "ready" },
   { name: "close" },
   { name: "setHeaderColor" },
@@ -38,6 +40,7 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
 ];
 
 export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
+  "init",
   "ready",
   "close",
   "setHeaderColor",
@@ -57,7 +60,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     sdkVersion: options.sdkVersion,
   });
   const permissions = new Set(options.permissions ?? []);
-  const appVersion = options.appVersion ?? "";
+  let appVersion = options.appVersion ?? "";
   const capabilities = new Map<string, CapabilityConfig>(
     [...DEFAULT_CAPABILITIES, ...(options.capabilities ?? [])].map((capability) => [
       capability.name,
@@ -141,12 +144,19 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     return invoke<void>("setHeaderColor", { color });
   };
 
+  const init = async (): Promise<InitData> => {
+    const initData = await invoke<InitData>("init");
+    appVersion = initData.appVersion;
+    return initData;
+  };
+
   return {
     invoke,
     canIUse,
     isVersionAtLeast,
     onEvent,
     offEvent,
+    init,
     ready: () => invoke<void>("ready"),
     close: () => invoke<void>("close"),
     setHeaderColor,

@@ -80,6 +80,48 @@ test("passes invoke params to Flutter InAppWebView", async () => {
   });
 });
 
+test("init handshakes with Flutter and returns startup context", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return {
+        success: true,
+        data: {
+          appVersion: "3.4.0",
+          sdkVersion: "0.2.0",
+          colorScheme: "dark",
+          platform: "ios",
+          launchContext: {
+            scene: "community",
+            communityId: "community-123",
+          },
+        },
+      };
+    },
+  } satisfies TestFlutterBridge;
+
+  const sdk = createMiniAppSDK();
+
+  await expect(sdk.init()).resolves.toEqual({
+    appVersion: "3.4.0",
+    sdkVersion: "0.2.0",
+    colorScheme: "dark",
+    platform: "ios",
+    launchContext: {
+      scene: "community",
+      communityId: "community-123",
+    },
+  });
+  expect(calls[0]).toMatchObject({
+    handlerName: "nativeBridge",
+    payload: {
+      id: "tgg_req_1",
+      method: "init",
+    },
+  });
+});
+
 test("supports custom native handler names", async () => {
   const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
   testGlobal.flutter_inappwebview = {
@@ -392,6 +434,44 @@ test("runtime native APIs call Flutter InAppWebView", async () => {
   expect(calls.map((call) => call.payload.method)).toEqual(["ready", "BackButton.show"]);
 });
 
+test("runtime init updates startup metadata before ready is called", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      if ((payload as Record<string, unknown>).method === "init") {
+        return {
+          success: true,
+          data: {
+            appVersion: "3.4.0",
+            sdkVersion: "0.2.0",
+            colorScheme: "dark",
+            platform: "android",
+            launchContext: {
+              source: "push",
+            },
+          },
+        };
+      }
+
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+
+  const initData = await runtime.init();
+  await runtime.ready();
+
+  expect(initData.platform).toBe("android");
+  expect(runtime.appVersion).toBe("3.4.0");
+  expect(runtime.sdkVersion).toBe("0.2.0");
+  expect(runtime.colorScheme).toBe("dark");
+  expect(runtime.platform).toBe("android");
+  expect(runtime.isVersionAtLeast("3.3.0")).toBe(true);
+  expect(calls.map((call) => call.payload.method)).toEqual(["init", "ready"]);
+});
+
 test("BackButton onClick fires through window.__tgg_emit", () => {
   testGlobal.flutter_inappwebview = {
     async callHandler() {
@@ -587,6 +667,7 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
   const { getSupportedCapabilities } = await import("../src/index");
 
   expect(getSupportedCapabilities()).toEqual([
+    "init",
     "ready",
     "close",
     "setHeaderColor",

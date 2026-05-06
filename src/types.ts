@@ -1,4 +1,5 @@
 export type MiniAppMethod =
+  | "init"
   | "ready"
   | "close"
   | "setHeaderColor"
@@ -12,6 +13,8 @@ export type MiniAppMethod =
   | "getCommunityInfo";
 
 export type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
+
+export type TggColorScheme = "light" | "dark";
 
 export type TggCapability = MiniAppMethod | "themeChanged" | "backButtonClicked";
 
@@ -77,12 +80,23 @@ export type MiniAppSDKError = Error & {
   code?: string;
 };
 
+export type LaunchContext = Record<string, unknown>;
+
+export type InitData = {
+  appVersion: string;
+  sdkVersion: string;
+  colorScheme: TggColorScheme;
+  platform: string;
+  launchContext?: LaunchContext;
+};
+
 export type MiniAppSDK = {
   invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
   canIUse(capability: string): boolean;
   isVersionAtLeast(version: string): boolean;
   onEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void;
   offEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void;
+  init(): Promise<InitData>;
   ready(): Promise<void>;
   close(): Promise<void>;
   setHeaderColor(color: TggHeaderColor): Promise<void>;
@@ -109,10 +123,12 @@ export type TggWebApp = MiniAppSDK & {
   readonly sdkVersion: string;
   readonly platform: string;
   readonly appVersion: string;
+  readonly colorScheme: TggColorScheme;
 };
 
 export type TggRuntimeOptions = MiniAppSDKOptions & {
   appVersion?: string;
+  colorScheme?: TggColorScheme;
   platform?: string;
   version?: string;
 };

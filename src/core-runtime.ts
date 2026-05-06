@@ -1,17 +1,58 @@
 import { SDK_VERSION, TGG_EVENT_GLOBAL_NAME, TGG_GLOBAL_NAME } from "./constants";
 import { getRuntimeGlobal } from "./runtime";
 import { createMiniAppSDK, NATIVE_METHOD_CAPABILITIES } from "./sdk";
-import type { MiniAppMethod, TggEventName, TggRuntimeOptions, TggWebApp } from "./types";
+import type {
+  InitData,
+  MiniAppMethod,
+  TggColorScheme,
+  TggEventName,
+  TggRuntimeOptions,
+  TggWebApp,
+} from "./types";
 
 export const createTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp => {
   const sdk = createMiniAppSDK(options);
-
-  const runtime: TggWebApp = {
-    ...sdk,
+  const runtimeMetadata = {
     appVersion: options.appVersion ?? "",
+    colorScheme: options.colorScheme ?? "light",
     platform: options.platform ?? "web",
     sdkVersion: options.sdkVersion ?? SDK_VERSION,
     version: options.version ?? SDK_VERSION,
+  } satisfies {
+    appVersion: string;
+    colorScheme: TggColorScheme;
+    platform: string;
+    sdkVersion: string;
+    version: string;
+  };
+
+  const init = async (): Promise<InitData> => {
+    const initData = await sdk.init();
+    runtimeMetadata.appVersion = initData.appVersion;
+    runtimeMetadata.colorScheme = initData.colorScheme;
+    runtimeMetadata.platform = initData.platform;
+    runtimeMetadata.sdkVersion = initData.sdkVersion;
+    return initData;
+  };
+
+  const runtime: TggWebApp = {
+    ...sdk,
+    init,
+    get appVersion() {
+      return runtimeMetadata.appVersion;
+    },
+    get colorScheme() {
+      return runtimeMetadata.colorScheme;
+    },
+    get platform() {
+      return runtimeMetadata.platform;
+    },
+    get sdkVersion() {
+      return runtimeMetadata.sdkVersion;
+    },
+    get version() {
+      return runtimeMetadata.version;
+    },
   };
 
   const global = getRuntimeGlobal();
@@ -30,6 +71,7 @@ export const installTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp =>
 
   if (
     typeof currentRuntime?.invoke === "function" &&
+    typeof currentRuntime.init === "function" &&
     typeof currentRuntime.canIUse === "function" &&
     typeof currentRuntime.isVersionAtLeast === "function" &&
     currentRuntime.BackButton
