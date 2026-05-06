@@ -10,15 +10,28 @@ export type MiniAppMethod =
   | "getUserInfo"
   | "getSystemInfo"
   | "getCommunityId"
-  | "getCommunityInfo";
+  | "getCommunityInfo"
+  | "downloadFile"
+  | "abortDownloadFile";
 
 export type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
 
 export type TggColorScheme = "light" | "dark";
 
-export type TggCapability = MiniAppMethod | "themeChanged" | "backButtonClicked";
+export type TggCapability =
+  | MiniAppMethod
+  | "themeChanged"
+  | "backButtonClicked"
+  | "downloadFileProgress"
+  | "downloadFileSuccess"
+  | "downloadFileFail";
 
-export type TggEventName = "backButtonClicked" | "themeChanged";
+export type TggEventName =
+  | "backButtonClicked"
+  | "themeChanged"
+  | "downloadFileProgress"
+  | "downloadFileSuccess"
+  | "downloadFileFail";
 
 export type TggEventPayload = unknown;
 
@@ -90,6 +103,38 @@ export type InitData = {
   launchContext?: LaunchContext;
 };
 
+export type DownloadFileSuccessResult = {
+  tempFilePath: string;
+};
+
+export type DownloadFileFailResult = {
+  errMsg: string;
+};
+
+export type DownloadFileCompleteResult = {
+  errMsg: string;
+};
+
+export type DownloadProgress = {
+  progress: number;
+};
+
+export type DownloadTaskCallback = (res: DownloadProgress) => void;
+
+export type DownloadFileOptions = {
+  url: string;
+  fileName?: string;
+  success?(res: DownloadFileSuccessResult): void;
+  fail?(res: DownloadFileFailResult): void;
+  complete?(res: DownloadFileCompleteResult): void;
+};
+
+export type DownloadTask = {
+  abort(): void;
+  onProgressUpdate(callback: DownloadTaskCallback): void;
+  offProgressUpdate(callback: DownloadTaskCallback): void;
+};
+
 export type MiniAppSDK = {
   invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
   canIUse(capability: string): boolean;
@@ -106,6 +151,7 @@ export type MiniAppSDK = {
   getSystemInfo(): Promise<SystemInfo>;
   getCommunityId(): Promise<string>;
   getCommunityInfo(): Promise<CommunityInfo>;
+  downloadFile(options: DownloadFileOptions): DownloadTask;
   BackButton: TggBackButton;
   receiveEvent(eventName: TggEventName, payload?: unknown): void;
 };

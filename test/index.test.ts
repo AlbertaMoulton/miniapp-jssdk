@@ -663,6 +663,160 @@ test("setHeaderColor rejects invalid color values before native calls", async ()
   expect(calls).toEqual([]);
 });
 
+test("downloadFile starts a native download task and returns task controls", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const success = vi.fn();
+  const complete = vi.fn();
+  const task = runtime.downloadFile({
+    url: "https://example.com/report.pdf",
+    fileName: "report.pdf",
+    success,
+    complete,
+  });
+
+  expect(typeof task.abort).toBe("function");
+  expect(typeof task.onProgressUpdate).toBe("function");
+  expect(typeof task.offProgressUpdate).toBe("function");
+  expect(calls[0]).toMatchObject({
+    handlerName: "nativeBridge",
+    payload: {
+      method: "downloadFile",
+      params: {
+        taskId: "tgg_download_1",
+        url: "https://example.com/report.pdf",
+        fileName: "report.pdf",
+      },
+    },
+  });
+
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("downloadFileSuccess", {
+    taskId: "tgg_download_1",
+    tempFilePath: "/tmp/report.pdf",
+  });
+
+  expect(success).toHaveBeenCalledWith({ tempFilePath: "/tmp/report.pdf" });
+  expect(complete).toHaveBeenCalledWith({ errMsg: "downloadFile:ok" });
+});
+
+test("downloadFile task manages progress listeners", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const progress = vi.fn();
+  const task = runtime.downloadFile({
+    url: "https://example.com/report.pdf",
+  });
+
+  task.onProgressUpdate(progress);
+  task.onProgressUpdate(progress);
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)(
+    "downloadFileProgress",
+    {
+      taskId: "tgg_download_1",
+      progress: 42,
+    },
+  );
+  task.offProgressUpdate(progress);
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)(
+    "downloadFileProgress",
+    {
+      taskId: "tgg_download_1",
+      progress: 90,
+    },
+  );
+
+  expect(progress).toHaveBeenCalledOnce();
+  expect(progress).toHaveBeenCalledWith({ progress: 42 });
+});
+
+test("downloadFile task dispatches fail and complete on native failure", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const fail = vi.fn();
+  const complete = vi.fn();
+  runtime.downloadFile({
+    url: "https://example.com/report.pdf",
+    fail,
+    complete,
+  });
+
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("downloadFileFail", {
+    taskId: "tgg_download_1",
+    errMsg: "download failed",
+  });
+
+  expect(fail).toHaveBeenCalledWith({ errMsg: "download failed" });
+  expect(complete).toHaveBeenCalledWith({ errMsg: "download failed" });
+});
+
+test("downloadFile abort asks native to cancel the task", () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const fail = vi.fn();
+  const complete = vi.fn();
+  const task = runtime.downloadFile({
+    url: "https://example.com/report.pdf",
+    fail,
+    complete,
+  });
+
+  task.abort();
+
+  expect(calls.map((call) => call.payload.method)).toEqual(["downloadFile", "abortDownloadFile"]);
+  expect(calls[1].payload.params).toEqual({ taskId: "tgg_download_1" });
+  expect(fail).toHaveBeenCalledWith({ errMsg: "downloadFile:abort" });
+  expect(complete).toHaveBeenCalledWith({ errMsg: "downloadFile:abort" });
+});
+
+test("downloadFile rejects invalid params locally", () => {
+  const calls: unknown[] = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(_handlerName: string, payload: unknown) {
+      calls.push(payload);
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const fail = vi.fn();
+  const complete = vi.fn();
+
+  runtime.downloadFile({
+    url: "ftp://example.com/report.pdf",
+    fileName: "../report.pdf",
+    fail,
+    complete,
+  });
+
+  expect(fail).toHaveBeenCalledWith({ errMsg: "downloadFile:fail invalid url" });
+  expect(complete).toHaveBeenCalledWith({ errMsg: "downloadFile:fail invalid url" });
+  expect(calls).toEqual([]);
+});
+
 test("getSupportedCapabilities returns native method capabilities", async () => {
   const { getSupportedCapabilities } = await import("../src/index");
 
@@ -679,5 +833,7 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
     "getSystemInfo",
     "getCommunityId",
     "getCommunityInfo",
+    "downloadFile",
+    "abortDownloadFile",
   ]);
 });

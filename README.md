@@ -54,6 +54,31 @@ await tgg.ready();
 await tgg.close();
 ```
 
+Download a file with progress:
+
+```ts
+const task = tgg.downloadFile({
+  url: "https://example.com/report.pdf",
+  fileName: "report.pdf",
+  success({ tempFilePath }) {
+    console.log(tempFilePath);
+  },
+  fail({ errMsg }) {
+    console.error(errMsg);
+  },
+  complete({ errMsg }) {
+    console.log(errMsg);
+  },
+});
+
+task.onProgressUpdate(({ progress }) => {
+  console.log(progress);
+});
+
+// Cancel if needed.
+task.abort();
+```
+
 For explicit access:
 
 ```ts
@@ -113,6 +138,7 @@ The runtime performs local checks before native calls:
 - App version checks through `tgg.isVersionAtLeast(version)`
 - header color validation for `"bg_color"`, `"secondary_bg_color"`, or `#RRGGBB`
 - duplicate `BackButton.show()` / `BackButton.hide()` calls are skipped when the visible state is unchanged
+- file download progress and completion are delivered through `window.__tgg_emit`
 
 ### Back button click events
 
@@ -137,6 +163,29 @@ For generic runtime events, miniapps can use:
 tgg.onEvent("themeChanged", (payload) => {
   console.log(payload);
 });
+```
+
+### File download events
+
+Flutter should emit file download task events with the `taskId` provided in the
+`downloadFile` request:
+
+```dart
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("downloadFileProgress", {"taskId":"tgg_download_1","progress":42})',
+);
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("downloadFileSuccess", {"taskId":"tgg_download_1","tempFilePath":"/tmp/report.pdf"})',
+);
+```
+
+Cancelling a download calls native with:
+
+```js
+{
+  method: "abortDownloadFile",
+  params: { taskId: "tgg_download_1" }
+}
 ```
 
 ## Release

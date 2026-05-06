@@ -244,6 +244,89 @@ tgg.close(): Promise<void>
 await tgg.close();
 ```
 
+## 文件 API
+
+### `tgg.downloadFile(options)`
+
+```ts
+tgg.downloadFile(options: DownloadFileOptions): DownloadTask
+```
+
+使用场景：
+
+- 请求 TeamGaga App 下载远程文件。
+- 监听下载进度。
+- 在用户取消页面操作时中止下载。
+
+参数：
+
+| 参数      | 类型                  | 必填 | 说明           |
+| --------- | --------------------- | ---- | -------------- |
+| `options` | `DownloadFileOptions` | 是   | 下载任务配置。 |
+
+`DownloadFileOptions` 字段：
+
+| 字段       | 类型                                                     | 必填 | 说明                                       |
+| ---------- | -------------------------------------------------------- | ---- | ------------------------------------------ |
+| `url`      | `string`                                                 | 是   | 下载地址，仅支持 `http://` 和 `https://`。 |
+| `fileName` | `string \| undefined`                                    | 否   | 保存文件名，不能包含 `/` 或 `\`。          |
+| `success`  | `((res: { tempFilePath: string }) => void) \| undefined` | 否   | 下载成功回调。                             |
+| `fail`     | `((res: { errMsg: string }) => void) \| undefined`       | 否   | 下载失败回调。                             |
+| `complete` | `((res: { errMsg: string }) => void) \| undefined`       | 否   | 成功、失败或取消后都会执行的回调。         |
+
+返回值：`DownloadTask`。
+
+`DownloadTask` 字段：
+
+| 字段                | 类型                                       | 说明               |
+| ------------------- | ------------------------------------------ | ------------------ |
+| `abort`             | `() => void`                               | 取消下载任务。     |
+| `onProgressUpdate`  | `(callback: DownloadTaskCallback) => void` | 监听下载进度。     |
+| `offProgressUpdate` | `(callback: DownloadTaskCallback) => void` | 取消下载进度监听。 |
+
+`DownloadTaskCallback`：
+
+```ts
+type DownloadTaskCallback = (res: { progress: number }) => void;
+```
+
+示例：
+
+```ts
+const task = tgg.downloadFile({
+  url: "https://example.com/report.pdf",
+  fileName: "report.pdf",
+  success({ tempFilePath }) {
+    console.log(tempFilePath);
+  },
+  fail({ errMsg }) {
+    console.error(errMsg);
+  },
+  complete({ errMsg }) {
+    console.log(errMsg);
+  },
+});
+
+const onProgress = ({ progress }: { progress: number }) => {
+  console.log(progress);
+};
+
+task.onProgressUpdate(onProgress);
+
+// 不再需要进度时可以移除监听。
+task.offProgressUpdate(onProgress);
+
+// 用户取消时可以中止下载。
+task.abort();
+```
+
+注意：
+
+- `downloadFile()` 会立即返回 `DownloadTask`，不会等待下载完成。
+- `success` 的 `tempFilePath` 由 Flutter Host 决定，可以是临时路径或宿主侧可识别路径。
+- `abort()` 会调用 Native 的 `abortDownloadFile`，并以 `downloadFile:abort` 触发 `fail` 和 `complete`。
+- 如果 `url` 或 `fileName` 不合法，SDK 会本地触发 `fail` 和 `complete`，不会调用 Native。
+
 ## 导航栏 API
 
 TeamGaga 参考 Telegram Mini App 的顶部导航栏策略，不提供动态 `setTitle` 能力：
@@ -718,22 +801,27 @@ tgg.canIUse(capability: string): boolean
 
 当前可检测能力：
 
-| 能力名                | 说明                       |
-| --------------------- | -------------------------- |
-| `"init"`              | SDK / Native bridge 握手。 |
-| `"ready"`             | 页面 ready 通知。          |
-| `"close"`             | 关闭当前 Mini App。        |
-| `"setHeaderColor"`    | 设置原生导航栏颜色。       |
-| `"BackButton.show"`   | 展示原生返回按钮。         |
-| `"BackButton.hide"`   | 隐藏原生返回按钮。         |
-| `"getOauthCode"`      | 获取 OAuth code。          |
-| `"getUserId"`         | 获取用户 ID。              |
-| `"getUserInfo"`       | 获取用户基础信息。         |
-| `"getSystemInfo"`     | 获取系统信息。             |
-| `"getCommunityId"`    | 获取社群 ID。              |
-| `"getCommunityInfo"`  | 获取社群基础信息。         |
-| `"themeChanged"`      | 主题变化事件能力。         |
-| `"backButtonClicked"` | 原生返回按钮点击事件能力。 |
+| 能力名                   | 说明                       |
+| ------------------------ | -------------------------- |
+| `"init"`                 | SDK / Native bridge 握手。 |
+| `"ready"`                | 页面 ready 通知。          |
+| `"close"`                | 关闭当前 Mini App。        |
+| `"setHeaderColor"`       | 设置原生导航栏颜色。       |
+| `"BackButton.show"`      | 展示原生返回按钮。         |
+| `"BackButton.hide"`      | 隐藏原生返回按钮。         |
+| `"getOauthCode"`         | 获取 OAuth code。          |
+| `"getUserId"`            | 获取用户 ID。              |
+| `"getUserInfo"`          | 获取用户基础信息。         |
+| `"getSystemInfo"`        | 获取系统信息。             |
+| `"getCommunityId"`       | 获取社群 ID。              |
+| `"getCommunityInfo"`     | 获取社群基础信息。         |
+| `"downloadFile"`         | 下载远程文件。             |
+| `"abortDownloadFile"`    | 取消下载任务。             |
+| `"themeChanged"`         | 主题变化事件能力。         |
+| `"backButtonClicked"`    | 原生返回按钮点击事件能力。 |
+| `"downloadFileProgress"` | 下载进度事件能力。         |
+| `"downloadFileSuccess"`  | 下载成功事件能力。         |
+| `"downloadFileFail"`     | 下载失败事件能力。         |
 
 示例：
 
@@ -899,7 +987,7 @@ window.__tgg_emit(eventName: TggEventName | string, payload?: unknown): void
 使用场景：
 
 - Flutter Host 主动向小程序 runtime 派发事件。
-- 当前用于通知原生返回按钮点击、主题变化等事件。
+- 当前用于通知原生返回按钮点击、主题变化、下载进度和下载完成等事件。
 - 这是 Host 专用入口；小程序业务代码应使用 SDK 提供的事件 API，例如 `tgg.BackButton.onClick(cb)`。
 
 参数：
@@ -926,8 +1014,27 @@ controller.evaluateJavascript(
 类型：
 
 ```ts
-type TggEventName = "backButtonClicked" | "themeChanged";
+type TggEventName =
+  | "backButtonClicked"
+  | "themeChanged"
+  | "downloadFileProgress"
+  | "downloadFileSuccess"
+  | "downloadFileFail";
 type TggEventPayload = unknown;
+```
+
+下载事件示例：
+
+```dart
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("downloadFileProgress", {"taskId":"tgg_download_1","progress":42})',
+);
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("downloadFileSuccess", {"taskId":"tgg_download_1","tempFilePath":"/tmp/report.pdf"})',
+);
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("downloadFileFail", {"taskId":"tgg_download_1","errMsg":"download failed"})',
+);
 ```
 
 ### Flutter H5 调用 Native
@@ -1121,13 +1228,21 @@ type MiniAppMethod =
   | "getUserInfo"
   | "getSystemInfo"
   | "getCommunityId"
-  | "getCommunityInfo";
+  | "getCommunityInfo"
+  | "downloadFile"
+  | "abortDownloadFile";
 ```
 
 ### `TggCapability`
 
 ```ts
-type TggCapability = MiniAppMethod | "themeChanged" | "backButtonClicked";
+type TggCapability =
+  | MiniAppMethod
+  | "themeChanged"
+  | "backButtonClicked"
+  | "downloadFileProgress"
+  | "downloadFileSuccess"
+  | "downloadFileFail";
 ```
 
 ### `TggBackButton`

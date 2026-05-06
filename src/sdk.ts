@@ -5,6 +5,12 @@ import { getRuntimeGlobal } from "./runtime";
 import type {
   CapabilityConfig,
   CommunityInfo,
+  DownloadFileCompleteResult,
+  DownloadFileFailResult,
+  DownloadFileOptions,
+  DownloadFileSuccessResult,
+  DownloadTask,
+  DownloadTaskCallback,
   InitData,
   MiniAppMethod,
   MiniAppSDK,
@@ -17,6 +23,10 @@ import type {
 } from "./types";
 
 const BACK_BUTTON_CLICKED_EVENT: TggEventName = "backButtonClicked";
+const DOWNLOAD_ABORT_MESSAGE = "downloadFile:abort";
+const DOWNLOAD_OK_MESSAGE = "downloadFile:ok";
+const DOWNLOAD_FILE_NAME_ERROR_MESSAGE = "downloadFile:fail invalid fileName";
+const DOWNLOAD_URL_ERROR_MESSAGE = "downloadFile:fail invalid url";
 const BACK_BUTTON_HANDLER_ERROR_MESSAGE = "[Teamgaga] BackButton.onClick handler failed";
 const INVALID_HEADER_COLOR_CODE = "INVALID_HEADER_COLOR";
 const PERMISSION_DENIED_CODE = "PERMISSION_DENIED";
@@ -35,8 +45,13 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "getSystemInfo", permission: "system:read" },
   { name: "getCommunityId", permission: "community:read" },
   { name: "getCommunityInfo", permission: "community:read" },
+  { name: "downloadFile" },
+  { name: "abortDownloadFile" },
   { name: "themeChanged" },
   { name: "backButtonClicked" },
+  { name: "downloadFileProgress" },
+  { name: "downloadFileSuccess" },
+  { name: "downloadFileFail" },
 ];
 
 export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
@@ -52,7 +67,15 @@ export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
   "getSystemInfo",
   "getCommunityId",
   "getCommunityInfo",
+  "downloadFile",
+  "abortDownloadFile",
 ];
+
+type DownloadTaskState = {
+  options: DownloadFileOptions;
+  progressHandlers: Set<DownloadTaskCallback>;
+  settled: boolean;
+};
 
 export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK => {
   const bridgeClient = createBridgeClient({
@@ -69,6 +92,8 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
   );
   let backButtonVisible = false;
   const eventHandlers = new Map<TggEventName, Set<(payload?: unknown) => void>>();
+  const downloadTasks = new Map<string, DownloadTaskState>();
+  let downloadTaskSequence = 0;
 
   const isVersionAtLeast = (version: string): boolean => compareVersions(appVersion, version) >= 0;
 
@@ -124,6 +149,21 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
   };
 
   const receiveEvent = (eventName: TggEventName, payload?: unknown): void => {
+    if (eventName === "downloadFileProgress") {
+      receiveDownloadFileProgress(payload);
+      return;
+    }
+
+    if (eventName === "downloadFileSuccess") {
+      receiveDownloadFileSuccess(payload);
+      return;
+    }
+
+    if (eventName === "downloadFileFail") {
+      receiveDownloadFileFail(payload);
+      return;
+    }
+
     const handlers = Array.from(eventHandlers.get(eventName) ?? []);
     handlers.forEach((handler) => {
       try {
@@ -150,6 +190,114 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     return initData;
   };
 
+  const createDownloadTaskId = (): string => {
+    downloadTaskSequence += 1;
+    return `tgg_download_${downloadTaskSequence}`;
+  };
+
+  const downloadFile = (options: DownloadFileOptions): DownloadTask => {
+    const taskId = createDownloadTaskId();
+    const progressHandlers = new Set<DownloadTaskCallback>();
+    const taskState: DownloadTaskState = {
+      options,
+      progressHandlers,
+      settled: false,
+    };
+
+    const task = createDownloadTask(taskId, taskState);
+    const validationError = getDownloadFileValidationError(options);
+    if (validationError) {
+      settleDownloadFileFail(taskState, validationError);
+      return task;
+    }
+
+    downloadTasks.set(taskId, taskState);
+    void invoke<void>("downloadFile", {
+      taskId,
+      url: options.url,
+      ...(options.fileName ? { fileName: options.fileName } : {}),
+    }).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : "downloadFile:fail";
+      const state = downloadTasks.get(taskId);
+      if (state) {
+        settleDownloadFileFail(state, message);
+        downloadTasks.delete(taskId);
+      }
+    });
+
+    return task;
+  };
+
+  const createDownloadTask = (taskId: string, taskState: DownloadTaskState): DownloadTask => ({
+    abort() {
+      if (taskState.settled) {
+        return;
+      }
+
+      void invoke<void>("abortDownloadFile", { taskId }).catch(() => {});
+      settleDownloadFileFail(taskState, DOWNLOAD_ABORT_MESSAGE);
+      downloadTasks.delete(taskId);
+    },
+    onProgressUpdate(callback: DownloadTaskCallback) {
+      taskState.progressHandlers.add(callback);
+    },
+    offProgressUpdate(callback: DownloadTaskCallback) {
+      taskState.progressHandlers.delete(callback);
+    },
+  });
+
+  const receiveDownloadFileProgress = (payload: unknown): void => {
+    const taskId = getStringValue(payload, "taskId");
+    const progress = getNumberValue(payload, "progress");
+
+    if (!taskId || typeof progress !== "number") {
+      return;
+    }
+
+    const taskState = downloadTasks.get(taskId);
+    if (!taskState || taskState.settled) {
+      return;
+    }
+
+    Array.from(taskState.progressHandlers).forEach((handler) => {
+      handler({ progress });
+    });
+  };
+
+  const receiveDownloadFileSuccess = (payload: unknown): void => {
+    const taskId = getStringValue(payload, "taskId");
+    const tempFilePath = getStringValue(payload, "tempFilePath");
+
+    if (!taskId || !tempFilePath) {
+      return;
+    }
+
+    const taskState = downloadTasks.get(taskId);
+    if (!taskState) {
+      return;
+    }
+
+    settleDownloadFileSuccess(taskState, { tempFilePath });
+    downloadTasks.delete(taskId);
+  };
+
+  const receiveDownloadFileFail = (payload: unknown): void => {
+    const taskId = getStringValue(payload, "taskId");
+    const errMsg = getStringValue(payload, "errMsg") ?? "downloadFile:fail";
+
+    if (!taskId) {
+      return;
+    }
+
+    const taskState = downloadTasks.get(taskId);
+    if (!taskState) {
+      return;
+    }
+
+    settleDownloadFileFail(taskState, errMsg);
+    downloadTasks.delete(taskId);
+  };
+
   return {
     invoke,
     canIUse,
@@ -166,6 +314,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     getSystemInfo: () => invoke<SystemInfo>("getSystemInfo"),
     getCommunityId: () => invoke<string>("getCommunityId"),
     getCommunityInfo: () => invoke<CommunityInfo>("getCommunityInfo"),
+    downloadFile,
     receiveEvent,
     BackButton: {
       get isVisible() {
@@ -196,6 +345,74 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     },
   };
 };
+
+const settleDownloadFileSuccess = (
+  taskState: DownloadTaskState,
+  result: DownloadFileSuccessResult,
+): void => {
+  if (taskState.settled) {
+    return;
+  }
+
+  taskState.settled = true;
+  taskState.options.success?.(result);
+  taskState.options.complete?.({ errMsg: DOWNLOAD_OK_MESSAGE });
+};
+
+const settleDownloadFileFail = (taskState: DownloadTaskState, errMsg: string): void => {
+  if (taskState.settled) {
+    return;
+  }
+
+  const result: DownloadFileFailResult & DownloadFileCompleteResult = { errMsg };
+  taskState.settled = true;
+  taskState.options.fail?.(result);
+  taskState.options.complete?.(result);
+};
+
+const getDownloadFileValidationError = (options: DownloadFileOptions): string | undefined => {
+  if (!isHttpUrl(options.url)) {
+    return DOWNLOAD_URL_ERROR_MESSAGE;
+  }
+
+  if (typeof options.fileName !== "undefined" && !isSafeFileName(options.fileName)) {
+    return DOWNLOAD_FILE_NAME_ERROR_MESSAGE;
+  }
+
+  return undefined;
+};
+
+const isHttpUrl = (value: string): boolean => {
+  return /^https?:\/\/\S+$/i.test(value);
+};
+
+const isSafeFileName = (fileName: string): boolean => {
+  const trimmedFileName = fileName.trim();
+  return (
+    trimmedFileName.length > 0 && !trimmedFileName.includes("/") && !trimmedFileName.includes("\\")
+  );
+};
+
+const getStringValue = (payload: unknown, key: string): string | undefined => {
+  if (!isRecord(payload)) {
+    return undefined;
+  }
+
+  const value = payload[key];
+  return typeof value === "string" ? value : undefined;
+};
+
+const getNumberValue = (payload: unknown, key: string): number | undefined => {
+  if (!isRecord(payload)) {
+    return undefined;
+  }
+
+  const value = payload[key];
+  return typeof value === "number" ? value : undefined;
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
 
 const compareVersions = (currentVersion: string, requiredVersion: string): number => {
   const currentParts = parseVersion(currentVersion);
