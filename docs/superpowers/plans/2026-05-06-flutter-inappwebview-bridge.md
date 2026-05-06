@@ -255,7 +255,7 @@ export type BridgeTransport = {
   send<T>(request: MiniAppInvokeRequest): Promise<T>;
 };
 
-export type MiniAppCapabilityDefinition = {
+export type CapabilityConfig = {
   name: TggCapability;
   permission?: MiniAppPermission;
   minAppVersion?: string;
@@ -270,7 +270,7 @@ export type MiniAppSDKOptions = {
   handlerName?: string;
   permissions?: readonly MiniAppPermission[];
   sdkVersion?: string;
-  capabilities?: readonly MiniAppCapabilityDefinition[];
+  capabilities?: readonly CapabilityConfig[];
 };
 
 export type TggRuntimeOptions = MiniAppSDKOptions & {
@@ -300,7 +300,7 @@ declare global {
 }
 ```
 
-- [ ] Update `src/index.ts` type exports to remove `MiniAppBridge`, `MiniAppRequest`, and add `BridgeTransport`, `FlutterInAppWebViewBridge`, `MiniAppCapabilityDefinition`, `MiniAppInvokeRequest`, `MiniAppInvokeResponse`, and `MiniAppPermission`.
+- [ ] Update `src/index.ts` type exports to remove `MiniAppBridge`, `MiniAppRequest`, and add `BridgeTransport`, `FlutterInAppWebViewBridge`, `CapabilityConfig`, `MiniAppInvokeRequest`, `MiniAppInvokeResponse`, and `MiniAppPermission`.
 
 - [ ] Run `pnpm run typecheck`.
       Expected: type errors in `src/bridge.ts`, `src/sdk.ts`, and tests because implementation still references removed types.
@@ -451,7 +451,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 - [ ] Add permission and capability helpers near the top of `src/sdk.ts`:
 
 ```ts
-const DEFAULT_CAPABILITIES: readonly MiniAppCapabilityDefinition[] = [
+const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "ready" },
   { name: "close" },
   { name: "setHeaderColor" },
@@ -476,7 +476,7 @@ const bridgeClient = createBridgeClient({
   sdkVersion: options.sdkVersion,
 });
 const permissions = new Set(options.permissions ?? []);
-const capabilities = new Map<string, MiniAppCapabilityDefinition>(
+const capabilities = new Map<string, CapabilityConfig>(
   [...DEFAULT_CAPABILITIES, ...(options.capabilities ?? [])].map((capability) => [
     capability.name,
     capability,

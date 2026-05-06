@@ -58,7 +58,7 @@ export type BridgeTransport = {
   send<T>(request: MiniAppInvokeRequest): Promise<T>;
 };
 
-export type MiniAppCapabilityDefinition = {
+export type CapabilityConfig = {
   name: TggCapability;
   permission?: MiniAppPermission;
   minAppVersion?: string;
@@ -69,7 +69,7 @@ export type MiniAppSDKOptions = {
   handlerName?: string;
   permissions?: readonly MiniAppPermission[];
   sdkVersion?: string;
-  capabilities?: readonly MiniAppCapabilityDefinition[];
+  capabilities?: readonly CapabilityConfig[];
 };
 
 export type MiniAppSDKError = Error & {
@@ -84,10 +84,10 @@ export type MiniAppSDK = {
   setHeaderColor(color: TggHeaderColor): Promise<void>;
   getOauthCode(): Promise<string>;
   getUserId(): Promise<string>;
-  getUserInfo(): Promise<MiniAppUserInfo>;
-  getSystemInfo(): Promise<MiniAppSystemInfo>;
+  getUserInfo(): Promise<UserInfo>;
+  getSystemInfo(): Promise<SystemInfo>;
   getCommunityId(): Promise<string>;
-  getCommunityInfo(): Promise<MiniAppCommunityInfo>;
+  getCommunityInfo(): Promise<CommunityInfo>;
   BackButton: TggBackButton;
   receiveEvent(eventName: TggEventName, payload?: unknown): void;
 };
@@ -132,7 +132,7 @@ type ViewPadding = {
   bottom: number;
 };
 
-export type MiniAppSystemInfo = {
+export type SystemInfo = {
   devicePixelRatio: number;
   textScaleFactor: number;
   locale: SystemLocale;
@@ -141,14 +141,14 @@ export type MiniAppSystemInfo = {
   viewPadding: ViewPadding;
 };
 
-export type MiniAppUserInfo = {
+export type UserInfo = {
   userId: string;
   avatar: string;
   username: string;
   nickname: string;
 };
 
-export type MiniAppCommunityInfo = {
+export type CommunityInfo = {
   communityId: string;
   name?: string;
   icon?: string;

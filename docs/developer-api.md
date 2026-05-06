@@ -457,7 +457,7 @@ const userId = await getUserId();
 ### `tgg.getUserInfo()`
 
 ```ts
-tgg.getUserInfo(): Promise<MiniAppUserInfo>
+tgg.getUserInfo(): Promise<UserInfo>
 ```
 
 使用场景：
@@ -467,9 +467,9 @@ tgg.getUserInfo(): Promise<MiniAppUserInfo>
 
 参数：无。
 
-返回值：`Promise<MiniAppUserInfo>`。
+返回值：`Promise<UserInfo>`。
 
-`MiniAppUserInfo` 字段：
+`UserInfo` 字段：
 
 | 字段       | 类型     | 说明           |
 | ---------- | -------- | -------------- |
@@ -496,7 +496,7 @@ const user = await getUserInfo();
 ### `tgg.getSystemInfo()`
 
 ```ts
-tgg.getSystemInfo(): Promise<MiniAppSystemInfo>
+tgg.getSystemInfo(): Promise<SystemInfo>
 ```
 
 使用场景：
@@ -506,9 +506,9 @@ tgg.getSystemInfo(): Promise<MiniAppSystemInfo>
 
 参数：无。
 
-返回值：`Promise<MiniAppSystemInfo>`。
+返回值：`Promise<SystemInfo>`。
 
-`MiniAppSystemInfo` 字段：
+`SystemInfo` 字段：
 
 | 字段                 | 类型                | 说明                           |
 | -------------------- | ------------------- | ------------------------------ |
@@ -594,7 +594,7 @@ const communityId = await getCommunityId();
 ### `tgg.getCommunityInfo()`
 
 ```ts
-tgg.getCommunityInfo(): Promise<MiniAppCommunityInfo>
+tgg.getCommunityInfo(): Promise<CommunityInfo>
 ```
 
 使用场景：
@@ -604,9 +604,9 @@ tgg.getCommunityInfo(): Promise<MiniAppCommunityInfo>
 
 参数：无。
 
-返回值：`Promise<MiniAppCommunityInfo>`。
+返回值：`Promise<CommunityInfo>`。
 
-`MiniAppCommunityInfo` 字段：
+`CommunityInfo` 字段：
 
 | 字段          | 类型                  | 说明                       |
 | ------------- | --------------------- | -------------------------- |
@@ -869,12 +869,12 @@ createMiniAppSDK(options?: MiniAppSDKOptions): MiniAppSDK
 
 `MiniAppSDKOptions` 字段：
 
-| 字段           | 类型                                                  | 说明                                                   |
-| -------------- | ----------------------------------------------------- | ------------------------------------------------------ |
-| `handlerName`  | `string \| undefined`                                 | Flutter JavaScript handler 名。默认 `"nativeBridge"`。 |
-| `permissions`  | `readonly MiniAppPermission[] \| undefined`           | 当前小程序允许使用的权限白名单。                       |
-| `sdkVersion`   | `string \| undefined`                                 | SDK 版本。默认使用包内版本。                           |
-| `capabilities` | `readonly MiniAppCapabilityDefinition[] \| undefined` | 能力覆盖配置，可用于禁用或扩展能力。                   |
+| 字段           | 类型                                        | 说明                                                   |
+| -------------- | ------------------------------------------- | ------------------------------------------------------ |
+| `handlerName`  | `string \| undefined`                       | Flutter JavaScript handler 名。默认 `"nativeBridge"`。 |
+| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                       |
+| `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                           |
+| `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用或扩展能力。                   |
 
 返回值：`MiniAppSDK`。
 
@@ -897,15 +897,15 @@ createTggRuntime(options?: TggRuntimeOptions): TggWebApp
 
 `TggRuntimeOptions` 字段：
 
-| 字段           | 类型                                                  | 说明                                                   |
-| -------------- | ----------------------------------------------------- | ------------------------------------------------------ |
-| `appVersion`   | `string \| undefined`                                 | TeamGaga App 版本。默认空字符串。                      |
-| `handlerName`  | `string \| undefined`                                 | Flutter JavaScript handler 名。默认 `"nativeBridge"`。 |
-| `permissions`  | `readonly MiniAppPermission[] \| undefined`           | 当前小程序允许使用的权限白名单。                       |
-| `platform`     | `string \| undefined`                                 | 平台标识。默认 `"web"`。                               |
-| `sdkVersion`   | `string \| undefined`                                 | SDK 版本。默认使用包内版本。                           |
-| `version`      | `string \| undefined`                                 | core runtime 版本。默认使用包内版本。                  |
-| `capabilities` | `readonly MiniAppCapabilityDefinition[] \| undefined` | 能力覆盖配置，可用于禁用或扩展能力。                   |
+| 字段           | 类型                                        | 说明                                                   |
+| -------------- | ------------------------------------------- | ------------------------------------------------------ |
+| `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                      |
+| `handlerName`  | `string \| undefined`                       | Flutter JavaScript handler 名。默认 `"nativeBridge"`。 |
+| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                       |
+| `platform`     | `string \| undefined`                       | 平台标识。默认 `"web"`。                               |
+| `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                           |
+| `version`      | `string \| undefined`                       | core runtime 版本。默认使用包内版本。                  |
+| `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用或扩展能力。                   |
 
 返回值：`TggWebApp`，并会挂载到 `window.tgg`。
 

@@ -3,13 +3,13 @@ import { SDK_NOT_INJECTED_MESSAGE, TGG_GLOBAL_NAME } from "./constants";
 import { createMiniAppError } from "./errors";
 import { getRuntimeGlobal } from "./runtime";
 import type {
-  MiniAppCapabilityDefinition,
-  MiniAppCommunityInfo,
+  CapabilityConfig,
+  CommunityInfo,
   MiniAppMethod,
   MiniAppSDK,
   MiniAppSDKOptions,
-  MiniAppSystemInfo,
-  MiniAppUserInfo,
+  SystemInfo,
+  UserInfo,
   TggEventName,
   TggHeaderColor,
   TggWebApp,
@@ -19,7 +19,7 @@ const BACK_BUTTON_CLICKED_EVENT: TggEventName = "backButtonClicked";
 const BACK_BUTTON_HANDLER_ERROR_MESSAGE = "[Teamgaga] BackButton.onClick handler failed";
 const PERMISSION_DENIED_CODE = "PERMISSION_DENIED";
 
-export const DEFAULT_CAPABILITIES: readonly MiniAppCapabilityDefinition[] = [
+export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "ready" },
   { name: "close" },
   { name: "setHeaderColor" },
@@ -55,7 +55,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     sdkVersion: options.sdkVersion,
   });
   const permissions = new Set(options.permissions ?? []);
-  const capabilities = new Map<string, MiniAppCapabilityDefinition>(
+  const capabilities = new Map<string, CapabilityConfig>(
     [...DEFAULT_CAPABILITIES, ...(options.capabilities ?? [])].map((capability) => [
       capability.name,
       capability,
@@ -110,10 +110,10 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     setHeaderColor: (color) => invoke<void>("setHeaderColor", { color }),
     getOauthCode: () => invoke<string>("getOauthCode"),
     getUserId: () => invoke<string>("getUserId"),
-    getUserInfo: () => invoke<MiniAppUserInfo>("getUserInfo"),
-    getSystemInfo: () => invoke<MiniAppSystemInfo>("getSystemInfo"),
+    getUserInfo: () => invoke<UserInfo>("getUserInfo"),
+    getSystemInfo: () => invoke<SystemInfo>("getSystemInfo"),
     getCommunityId: () => invoke<string>("getCommunityId"),
-    getCommunityInfo: () => invoke<MiniAppCommunityInfo>("getCommunityInfo"),
+    getCommunityInfo: () => invoke<CommunityInfo>("getCommunityInfo"),
     receiveEvent: (eventName: TggEventName, _payload?: unknown) => {
       if (eventName === BACK_BUTTON_CLICKED_EVENT) {
         emitBackButtonClicked();
@@ -167,13 +167,13 @@ export const getOauthCode = (): Promise<string> => getTgg().getOauthCode();
 
 export const getUserId = (): Promise<string> => getTgg().getUserId();
 
-export const getUserInfo = (): Promise<MiniAppUserInfo> => getTgg().getUserInfo();
+export const getUserInfo = (): Promise<UserInfo> => getTgg().getUserInfo();
 
-export const getSystemInfo = (): Promise<MiniAppSystemInfo> => getTgg().getSystemInfo();
+export const getSystemInfo = (): Promise<SystemInfo> => getTgg().getSystemInfo();
 
 export const getCommunityId = (): Promise<string> => getTgg().getCommunityId();
 
-export const getCommunityInfo = (): Promise<MiniAppCommunityInfo> => getTgg().getCommunityInfo();
+export const getCommunityInfo = (): Promise<CommunityInfo> => getTgg().getCommunityInfo();
 
 export const setHeaderColor = (color: TggHeaderColor): Promise<void> =>
   getTgg().setHeaderColor(color);
