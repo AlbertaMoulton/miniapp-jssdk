@@ -46,7 +46,7 @@
   },
   "scripts": {
     "ready": "pnpm run check && pnpm run test && pnpm run build",
-    "build": "pnpm run clean && rollup -c && tsc -p tsconfig.json --emitDeclarationOnly",
+    "build": "pnpm run clean && node scripts/build.mjs && pnpm run minify && tsc -p tsconfig.json --emitDeclarationOnly",
     "check": "vp check",
     "check:fix": "vp check --fix",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
@@ -54,6 +54,7 @@
     "fmt:check": "vp fmt --check",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix",
+    "minify": "terser dist/index.iife.js --compress --mangle --ecma 5 --comments false --source-map content=dist/index.iife.js.map,url=index.iife.min.js.map --output dist/index.iife.min.js && terser dist/core.js --compress --mangle --ecma 5 --comments false --source-map content=dist/core.js.map,url=core.min.js.map --output dist/core.min.js",
     "pack:check": "pnpm run build && pnpm pack --dry-run",
     "release:major": "node scripts/release.mjs major",
     "release:minor": "node scripts/release.mjs minor",

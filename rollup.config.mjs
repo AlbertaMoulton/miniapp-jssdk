@@ -1,10 +1,9 @@
 import babel from "@rollup/plugin-babel";
-import terser from "@rollup/plugin-terser";
 import typescript from "@rollup/plugin-typescript";
 
 const extensions = [".ts"];
 
-const basePlugins = [
+const createBasePlugins = () => [
   typescript({
     compilerOptions: {
       declaration: false,
@@ -33,84 +32,38 @@ const basePlugins = [
 export default [
   {
     input: "src/index.ts",
-    output: {
-      file: "dist/index.esm.js",
-      format: "esm",
-      sourcemap: true,
-    },
-    plugins: basePlugins,
-  },
-  {
-    input: "src/index.ts",
-    output: {
-      file: "dist/index.iife.js",
-      format: "iife",
-      name: "TeamGagaMiniApp",
-      exports: "named",
-      sourcemap: true,
-    },
-    plugins: basePlugins,
-  },
-  {
-    input: "src/index.ts",
-    output: {
-      file: "dist/index.iife.min.js",
-      format: "iife",
-      name: "TeamGagaMiniApp",
-      exports: "named",
-      sourcemap: true,
-    },
-    plugins: [
-      ...basePlugins,
-      terser({
-        compress: true,
-        ecma: 5,
-        format: {
-          comments: false,
-        },
-        mangle: true,
-      }),
+    output: [
+      {
+        file: "dist/index.esm.js",
+        format: "esm",
+        sourcemap: true,
+      },
+      {
+        file: "dist/index.iife.js",
+        format: "iife",
+        name: "TeamGagaMiniApp",
+        exports: "named",
+        sourcemap: true,
+      },
     ],
+    plugins: createBasePlugins(),
   },
   {
     input: "src/core.ts",
-    output: {
-      file: "dist/core.esm.js",
-      format: "esm",
-      sourcemap: true,
-    },
-    plugins: basePlugins,
-  },
-  {
-    input: "src/core.ts",
-    output: {
-      file: "dist/core.js",
-      format: "iife",
-      name: "TeamGagaMiniAppCore",
-      exports: "named",
-      sourcemap: true,
-    },
-    plugins: basePlugins,
-  },
-  {
-    input: "src/core.ts",
-    output: {
-      file: "dist/core.min.js",
-      format: "iife",
-      name: "TeamGagaMiniAppCore",
-      exports: "named",
-      sourcemap: true,
-    },
-    plugins: [
-      ...basePlugins,
-      terser({
-        compress: true,
-        ecma: 5,
-        format: {
-          comments: false,
-        },
-        mangle: true,
-      }),
+    output: [
+      {
+        file: "dist/core.esm.js",
+        format: "esm",
+        sourcemap: true,
+      },
+      {
+        file: "dist/core.js",
+        format: "iife",
+        name: "TeamGagaMiniAppCore",
+        exports: "named",
+        sourcemap: true,
+      },
     ],
+    plugins: createBasePlugins(),
   },
 ];
