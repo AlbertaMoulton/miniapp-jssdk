@@ -58,6 +58,14 @@ declare global {
 | `message` | `string`              | 错误描述。                        |
 | `code`    | `string \| undefined` | Native 返回的错误码；可能不存在。 |
 
+SDK 本地校验可能返回这些错误码：
+
+| 错误码                   | 说明                                               |
+| ------------------------ | -------------------------------------------------- |
+| `PERMISSION_DENIED`      | 当前小程序缺少调用该能力所需权限。                 |
+| `UNSUPPORTED_CAPABILITY` | 当前 App 版本、能力开关或 runtime 不支持该能力。   |
+| `INVALID_HEADER_COLOR`   | `setHeaderColor` 参数不是主题色 key 或 `#RRGGBB`。 |
+
 示例：
 
 ```ts
@@ -216,6 +224,10 @@ tgg.setHeaderColor(color: TggHeaderColor): Promise<void>
 | --------------- | -------------------------------- |
 | `Promise<void>` | 设置成功后 resolve；无返回数据。 |
 
+异常：
+
+- 当 `color` 不是 `"bg_color"`、`"secondary_bg_color"` 或 `#RRGGBB` 时，SDK 会在本地 reject，错误码为 `INVALID_HEADER_COLOR`。
+
 示例：
 
 ```ts
@@ -261,6 +273,7 @@ tgg.BackButton.isVisible: boolean
 注意：
 
 - 该值由 SDK 在 `show()` / `hide()` 成功后维护。
+- 重复调用当前状态对应的方法不会再次通知 Native，例如已经展示时再次调用 `show()` 会直接 resolve。
 - 如果 Native 侧主动改变按钮状态，小程序需要等待后续事件能力补充后再同步。
 
 ### `tgg.BackButton.show()`
@@ -678,6 +691,81 @@ if (tgg.canIUse("setHeaderColor")) {
 }
 ```
 
+### `tgg.isVersionAtLeast(version)`
+
+```ts
+tgg.isVersionAtLeast(version: string): boolean
+```
+
+使用场景：
+
+- 判断当前 TeamGaga App 版本是否满足某个最低版本。
+- 和 `canIUse()` 配合做渐进增强。
+
+参数：
+
+| 参数      | 类型     | 必填 | 说明                     |
+| --------- | -------- | ---- | ------------------------ |
+| `version` | `string` | 是   | 版本号，例如 `"3.2.0"`。 |
+
+返回值：
+
+| 类型      | 说明                                   |
+| --------- | -------------------------------------- |
+| `boolean` | `true` 表示当前 App 版本大于等于参数。 |
+
+示例：
+
+```ts
+if (tgg.isVersionAtLeast("3.3.0") && tgg.canIUse("setHeaderColor")) {
+  await tgg.setHeaderColor("#18A0FB");
+}
+```
+
+### `tgg.onEvent(eventName, callback)`
+
+```ts
+tgg.onEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void
+```
+
+使用场景：
+
+- 监听 runtime 事件，例如主题变化。
+- 作为 `BackButton.onClick(cb)` 之外的通用事件入口。
+
+参数：
+
+| 参数        | 类型                          | 必填 | 说明                           |
+| ----------- | ----------------------------- | ---- | ------------------------------ |
+| `eventName` | `TggEventName`                | 是   | 事件名。                       |
+| `callback`  | `(payload?: unknown) => void` | 是   | 事件回调。相同回调会自动去重。 |
+
+示例：
+
+```ts
+tgg.onEvent("themeChanged", (payload) => {
+  console.log(payload);
+});
+```
+
+### `tgg.offEvent(eventName, callback)`
+
+```ts
+tgg.offEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void
+```
+
+使用场景：
+
+- 取消通过 `tgg.onEvent()` 注册的事件监听。
+- 页面卸载、组件销毁时清理回调。
+
+参数：
+
+| 参数        | 类型                          | 必填 | 说明           |
+| ----------- | ----------------------------- | ---- | -------------- |
+| `eventName` | `TggEventName`                | 是   | 事件名。       |
+| `callback`  | `(payload?: unknown) => void` | 是   | 要移除的回调。 |
+
 ### `tgg.version`
 
 ```ts
@@ -869,12 +957,13 @@ createMiniAppSDK(options?: MiniAppSDKOptions): MiniAppSDK
 
 `MiniAppSDKOptions` 字段：
 
-| 字段           | 类型                                        | 说明                                                   |
-| -------------- | ------------------------------------------- | ------------------------------------------------------ |
-| `handlerName`  | `string \| undefined`                       | Flutter JavaScript handler 名。默认 `"nativeBridge"`。 |
-| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                       |
-| `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                           |
-| `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用或扩展能力。                   |
+| 字段           | 类型                                        | 说明                                                    |
+| -------------- | ------------------------------------------- | ------------------------------------------------------- |
+| `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                       |
+| `handlerName`  | `string \| undefined`                       | Flutter JavaScript handler 名。默认 `"nativeBridge"`。  |
+| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                        |
+| `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                            |
+| `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用、扩展能力或声明最低 App 版本。 |
 
 返回值：`MiniAppSDK`。
 

@@ -282,6 +282,30 @@ test("receiveEvent fires all registered BackButton onClick handlers", () => {
   expect(handler2).toHaveBeenCalledOnce();
 });
 
+test("onEvent and offEvent manage generic runtime event listeners", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  sdk.onEvent("themeChanged", handler);
+  sdk.receiveEvent("themeChanged", { colorScheme: "dark" });
+  sdk.offEvent("themeChanged", handler);
+  sdk.receiveEvent("themeChanged", { colorScheme: "light" });
+
+  expect(handler).toHaveBeenCalledOnce();
+  expect(handler).toHaveBeenCalledWith({ colorScheme: "dark" });
+});
+
+test("onEvent deduplicates callbacks for the same event", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  sdk.onEvent("themeChanged", handler);
+  sdk.onEvent("themeChanged", handler);
+  sdk.receiveEvent("themeChanged", { colorScheme: "dark" });
+
+  expect(handler).toHaveBeenCalledOnce();
+});
+
 test("BackButton handlers are isolated when one handler throws", () => {
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -458,6 +482,43 @@ test("canIUse respects disabled capability overrides", () => {
   expect(runtime.canIUse("setHeaderColor")).toBe(false);
 });
 
+test("isVersionAtLeast compares semantic app versions", () => {
+  const runtime = createTggRuntime({ appVersion: "3.10.1" });
+
+  expect(runtime.isVersionAtLeast("3.10.0")).toBe(true);
+  expect(runtime.isVersionAtLeast("3.10.1")).toBe(true);
+  expect(runtime.isVersionAtLeast("3.11.0")).toBe(false);
+  expect(runtime.isVersionAtLeast("4.0")).toBe(false);
+});
+
+test("canIUse respects minimum app versions", () => {
+  const runtime = createTggRuntime({
+    appVersion: "3.2.0",
+    capabilities: [{ name: "setHeaderColor", minAppVersion: "3.3.0" }],
+  });
+
+  expect(runtime.canIUse("setHeaderColor")).toBe(false);
+});
+
+test("invoke rejects locally when capability requires a newer app version", async () => {
+  const calls: unknown[] = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(_handlerName: string, payload: unknown) {
+      calls.push(payload);
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+  const runtime = createTggRuntime({
+    appVersion: "3.2.0",
+    capabilities: [{ name: "setHeaderColor", minAppVersion: "3.3.0" }],
+  });
+
+  await expect(runtime.setHeaderColor("bg_color")).rejects.toMatchObject({
+    code: "UNSUPPORTED_CAPABILITY",
+  });
+  expect(calls).toEqual([]);
+});
+
 test("protected methods reject locally when permission is missing", async () => {
   const calls: unknown[] = [];
   testGlobal.flutter_inappwebview = {
@@ -479,6 +540,45 @@ test("protected methods reject locally when permission is missing", async () => 
 
   await expect(runtime.getUserInfo()).rejects.toMatchObject({
     code: "PERMISSION_DENIED",
+  });
+  expect(calls).toEqual([]);
+});
+
+test("BackButton show and hide skip duplicate native calls", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+
+  await runtime.BackButton.show();
+  await runtime.BackButton.show();
+  await runtime.BackButton.hide();
+  await runtime.BackButton.hide();
+
+  expect(calls.map((call) => call.payload.method)).toEqual(["BackButton.show", "BackButton.hide"]);
+});
+
+test("setHeaderColor rejects invalid color values before native calls", async () => {
+  const calls: unknown[] = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(_handlerName: string, payload: unknown) {
+      calls.push(payload);
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+
+  await expect(runtime.setHeaderColor("red" as never)).rejects.toMatchObject({
+    code: "INVALID_HEADER_COLOR",
+  });
+  await expect(runtime.setHeaderColor("#abc" as never)).rejects.toMatchObject({
+    code: "INVALID_HEADER_COLOR",
   });
   expect(calls).toEqual([]);
 });

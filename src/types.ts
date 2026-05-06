@@ -66,6 +66,7 @@ export type CapabilityConfig = {
 };
 
 export type MiniAppSDKOptions = {
+  appVersion?: string;
   handlerName?: string;
   permissions?: readonly MiniAppPermission[];
   sdkVersion?: string;
@@ -79,6 +80,9 @@ export type MiniAppSDKError = Error & {
 export type MiniAppSDK = {
   invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
   canIUse(capability: string): boolean;
+  isVersionAtLeast(version: string): boolean;
+  onEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void;
+  offEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void;
   ready(): Promise<void>;
   close(): Promise<void>;
   setHeaderColor(color: TggHeaderColor): Promise<void>;

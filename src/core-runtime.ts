@@ -31,6 +31,7 @@ export const installTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp =>
   if (
     typeof currentRuntime?.invoke === "function" &&
     typeof currentRuntime.canIUse === "function" &&
+    typeof currentRuntime.isVersionAtLeast === "function" &&
     currentRuntime.BackButton
   ) {
     return currentRuntime;

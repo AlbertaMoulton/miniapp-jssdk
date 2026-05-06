@@ -17,7 +17,9 @@ import type {
 
 const BACK_BUTTON_CLICKED_EVENT: TggEventName = "backButtonClicked";
 const BACK_BUTTON_HANDLER_ERROR_MESSAGE = "[Teamgaga] BackButton.onClick handler failed";
+const INVALID_HEADER_COLOR_CODE = "INVALID_HEADER_COLOR";
 const PERMISSION_DENIED_CODE = "PERMISSION_DENIED";
+const UNSUPPORTED_CAPABILITY_CODE = "UNSUPPORTED_CAPABILITY";
 
 export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "ready" },
@@ -55,6 +57,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     sdkVersion: options.sdkVersion,
   });
   const permissions = new Set(options.permissions ?? []);
+  const appVersion = options.appVersion ?? "";
   const capabilities = new Map<string, CapabilityConfig>(
     [...DEFAULT_CAPABILITIES, ...(options.capabilities ?? [])].map((capability) => [
       capability.name,
@@ -62,12 +65,18 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     ]),
   );
   let backButtonVisible = false;
-  const backButtonClickHandlers = new Set<() => void>();
+  const eventHandlers = new Map<TggEventName, Set<(payload?: unknown) => void>>();
+
+  const isVersionAtLeast = (version: string): boolean => compareVersions(appVersion, version) >= 0;
 
   const canIUse = (capabilityName: string): boolean => {
     const capability = capabilities.get(capabilityName);
 
     if (!capability || capability.enabled === false) {
+      return false;
+    }
+
+    if (capability.minAppVersion && !isVersionAtLeast(capability.minAppVersion)) {
       return false;
     }
 
@@ -78,12 +87,22 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     return true;
   };
 
+  const getCapabilityFailureCode = (method: MiniAppMethod): string => {
+    const capability = capabilities.get(method);
+
+    if (capability?.permission && !permissions.has(capability.permission)) {
+      return PERMISSION_DENIED_CODE;
+    }
+
+    return UNSUPPORTED_CAPABILITY_CODE;
+  };
+
   const invoke = <T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T> => {
     if (!canIUse(method)) {
       return Promise.reject(
         createMiniAppError(
           `Permission denied or unsupported capability: ${method}`,
-          PERMISSION_DENIED_CODE,
+          getCapabilityFailureCode(method),
         ),
       );
     }
@@ -91,55 +110,112 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     return bridgeClient.invoke<T>(method, params);
   };
 
-  const emitBackButtonClicked = (): void => {
-    const handlers = Array.from(backButtonClickHandlers);
+  const onEvent = (eventName: TggEventName, callback: (payload?: unknown) => void): void => {
+    const handlers = eventHandlers.get(eventName) ?? new Set<(payload?: unknown) => void>();
+    handlers.add(callback);
+    eventHandlers.set(eventName, handlers);
+  };
+
+  const offEvent = (eventName: TggEventName, callback: (payload?: unknown) => void): void => {
+    eventHandlers.get(eventName)?.delete(callback);
+  };
+
+  const receiveEvent = (eventName: TggEventName, payload?: unknown): void => {
+    const handlers = Array.from(eventHandlers.get(eventName) ?? []);
     handlers.forEach((handler) => {
       try {
-        handler();
+        handler(payload);
       } catch (error) {
         console.error(BACK_BUTTON_HANDLER_ERROR_MESSAGE, error);
       }
     });
   };
 
+  const setHeaderColor = (color: TggHeaderColor): Promise<void> => {
+    if (!isHeaderColor(color)) {
+      return Promise.reject(
+        createMiniAppError(`Invalid header color: ${String(color)}`, INVALID_HEADER_COLOR_CODE),
+      );
+    }
+
+    return invoke<void>("setHeaderColor", { color });
+  };
+
   return {
     invoke,
     canIUse,
+    isVersionAtLeast,
+    onEvent,
+    offEvent,
     ready: () => invoke<void>("ready"),
     close: () => invoke<void>("close"),
-    setHeaderColor: (color) => invoke<void>("setHeaderColor", { color }),
+    setHeaderColor,
     getOauthCode: () => invoke<string>("getOauthCode"),
     getUserId: () => invoke<string>("getUserId"),
     getUserInfo: () => invoke<UserInfo>("getUserInfo"),
     getSystemInfo: () => invoke<SystemInfo>("getSystemInfo"),
     getCommunityId: () => invoke<string>("getCommunityId"),
     getCommunityInfo: () => invoke<CommunityInfo>("getCommunityInfo"),
-    receiveEvent: (eventName: TggEventName, _payload?: unknown) => {
-      if (eventName === BACK_BUTTON_CLICKED_EVENT) {
-        emitBackButtonClicked();
-      }
-    },
+    receiveEvent,
     BackButton: {
       get isVisible() {
         return backButtonVisible;
       },
       async show() {
+        if (backButtonVisible) {
+          return;
+        }
+
         await invoke<void>("BackButton.show");
         backButtonVisible = true;
       },
       async hide() {
+        if (!backButtonVisible) {
+          return;
+        }
+
         await invoke<void>("BackButton.hide");
         backButtonVisible = false;
       },
       onClick(cb: () => void) {
-        backButtonClickHandlers.add(cb);
+        onEvent(BACK_BUTTON_CLICKED_EVENT, cb);
       },
       offClick(cb: () => void) {
-        backButtonClickHandlers.delete(cb);
+        offEvent(BACK_BUTTON_CLICKED_EVENT, cb);
       },
     },
   };
 };
+
+const compareVersions = (currentVersion: string, requiredVersion: string): number => {
+  const currentParts = parseVersion(currentVersion);
+  const requiredParts = parseVersion(requiredVersion);
+  const length = Math.max(currentParts.length, requiredParts.length);
+
+  for (let index = 0; index < length; index += 1) {
+    const currentPart = currentParts[index] ?? 0;
+    const requiredPart = requiredParts[index] ?? 0;
+
+    if (currentPart > requiredPart) {
+      return 1;
+    }
+
+    if (currentPart < requiredPart) {
+      return -1;
+    }
+  }
+
+  return 0;
+};
+
+const parseVersion = (version: string): number[] =>
+  version
+    .trim()
+    .split(".")
+    .map((part) => Number.parseInt(part, 10) || 0);
+
+const isHeaderColor = (color: string): color is TggHeaderColor =>
+  color === "bg_color" || color === "secondary_bg_color" || /^#[0-9a-f]{6}$/i.test(color);
 
 export const getTgg = (): TggWebApp => {
   const runtime = getRuntimeGlobal()[TGG_GLOBAL_NAME] as TggWebApp | undefined;

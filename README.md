@@ -43,6 +43,9 @@ tgg.BackButton.show();
 tgg.BackButton.onClick(() => {
   // Custom back navigation
 });
+if (tgg.canIUse("setHeaderColor") && tgg.isVersionAtLeast("3.2.0")) {
+  await tgg.setHeaderColor("#18A0FB");
+}
 await tgg.close();
 ```
 
@@ -99,6 +102,13 @@ window.flutter_inappwebview.callHandler("nativeBridge", {
 Native responses should use `{ success: true, data }` for success and
 `{ success: false, error: { code, message } }` for failures.
 
+The runtime performs local checks before native calls:
+
+- capability and permission checks through `tgg.canIUse(capability)`
+- App version checks through `tgg.isVersionAtLeast(version)`
+- header color validation for `"bg_color"`, `"secondary_bg_color"`, or `#RRGGBB`
+- duplicate `BackButton.show()` / `BackButton.hide()` calls are skipped when the visible state is unchanged
+
 ### Back button click events
 
 When the user taps the back button in the navigation bar, the Flutter host should
@@ -115,6 +125,14 @@ controller.evaluateJavascript(
 
 See the [BackButton event example](#mini-app-usage) above for the developer-side
 usage.
+
+For generic runtime events, miniapps can use:
+
+```ts
+tgg.onEvent("themeChanged", (payload) => {
+  console.log(payload);
+});
+```
 
 ## Release
 
