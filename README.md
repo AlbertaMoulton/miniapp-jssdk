@@ -79,6 +79,16 @@ task.onProgressUpdate(({ progress }) => {
 task.abort();
 ```
 
+Save a data URL image to the system album:
+
+```ts
+const saved = await tgg.saveImageToAlbum({
+  fileName: "aaa.jpg",
+  dataUrl: "data:image/png;base64,iVBORw0KGgoAAAA...",
+});
+console.log(saved);
+```
+
 Listen for clipboard text returned by the Flutter host:
 
 ```ts
@@ -133,7 +143,7 @@ H5 calls native through:
 
 ```js
 window.flutter_inappwebview.callHandler("nativeBridge", {
-  id: "tgg_req_1",
+  id: "tgg_req_1_1",
   method: "init",
   sdkVersion: "0.1.5",
   timestamp: Date.now(),

@@ -25,6 +25,8 @@ export type MiniAppBridgeClient = {
   invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
 };
 
+let bridgeClientSequence = 0;
+
 export const createFlutterInAppWebViewTransport = (
   handlerName = DEFAULT_NATIVE_HANDLER_NAME,
 ): BridgeTransport => ({
@@ -45,11 +47,13 @@ export const createBridgeClient = (
 ): MiniAppBridgeClient => {
   const transport = createFlutterInAppWebViewTransport(options.handlerName);
   const sdkVersion = options.sdkVersion ?? SDK_VERSION;
+  bridgeClientSequence += 1;
+  const clientId = bridgeClientSequence.toString(36);
   let requestSequence = 0;
 
   const createRequestId = (): string => {
     requestSequence += 1;
-    return `${REQUEST_ID_PREFIX}${requestSequence}`;
+    return `${REQUEST_ID_PREFIX}${clientId}_${requestSequence}`;
   };
 
   const invoke = <T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T> => {

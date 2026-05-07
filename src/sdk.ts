@@ -17,6 +17,7 @@ import type {
   MiniAppMethod,
   MiniAppSDK,
   MiniAppSDKOptions,
+  SaveImageToAlbumOptions,
   SystemInfo,
   UserInfo,
   TggEventName,
@@ -50,6 +51,7 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "getCommunityInfo", permission: "community:read" },
   { name: "downloadFile" },
   { name: "abortDownloadFile" },
+  { name: "saveImageToAlbum" },
   { name: "themeChanged" },
   { name: "backButtonClicked" },
   { name: "downloadFileProgress" },
@@ -73,6 +75,7 @@ export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
   "getCommunityInfo",
   "downloadFile",
   "abortDownloadFile",
+  "saveImageToAlbum",
 ];
 
 type DownloadTaskState = {
@@ -339,6 +342,8 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     getCommunityId: () => invoke<string>("getCommunityId"),
     getCommunityInfo: () => invoke<CommunityInfo>("getCommunityInfo"),
     downloadFile,
+    saveImageToAlbum: (options: SaveImageToAlbumOptions) =>
+      invoke<boolean>("saveImageToAlbum", options),
     onClipboardTextReceived,
     receiveEvent,
     BackButton: {

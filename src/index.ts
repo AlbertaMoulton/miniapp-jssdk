@@ -40,6 +40,7 @@ export type {
   MiniAppSDK,
   MiniAppSDKError,
   MiniAppSDKOptions,
+  SaveImageToAlbumOptions,
   SystemInfo,
   UserInfo,
   TggBackButton,

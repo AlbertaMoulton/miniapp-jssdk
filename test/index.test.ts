@@ -21,6 +21,7 @@ type TestFlutterBridge = {
 };
 
 const testGlobal = globalThis as TestGlobal;
+const REQUEST_ID_PATTERN = /^tgg_req_[a-z0-9]+_\d+$/;
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -49,7 +50,7 @@ test("calls Flutter InAppWebView nativeBridge with invoke payload", async () => 
   expect(calls).toHaveLength(1);
   expect(calls[0].handlerName).toBe("nativeBridge");
   expect(calls[0].payload).toMatchObject({
-    id: "tgg_req_1",
+    id: expect.stringMatching(REQUEST_ID_PATTERN),
     method: "getUserId",
     sdkVersion: "0.1.5",
     timestamp: new Date("2026-05-06T00:00:00.000Z").getTime(),
@@ -71,7 +72,7 @@ test("passes invoke params to Flutter InAppWebView", async () => {
   expect(calls[0]).toMatchObject({
     handlerName: "nativeBridge",
     payload: {
-      id: "tgg_req_1",
+      id: expect.stringMatching(REQUEST_ID_PATTERN),
       method: "setHeaderColor",
       params: {
         color: "bg_color",
@@ -116,7 +117,7 @@ test("init handshakes with Flutter and returns startup context", async () => {
   expect(calls[0]).toMatchObject({
     handlerName: "nativeBridge",
     payload: {
-      id: "tgg_req_1",
+      id: expect.stringMatching(REQUEST_ID_PATTERN),
       method: "init",
     },
   });
@@ -252,7 +253,37 @@ test("keeps invoke ids unique across requests", async () => {
   await sdk.getCommunityId();
   await sdk.getOauthCode();
 
-  expect(calls.map((call) => call.payload.id)).toEqual(["tgg_req_1", "tgg_req_2", "tgg_req_3"]);
+  expect(calls.map((call) => call.payload.id)).toHaveLength(
+    new Set(calls.map((call) => call.payload.id)).size,
+  );
+  expect(calls.map((call) => String(call.payload.id))).toEqual([
+    expect.stringMatching(/^tgg_req_[a-z0-9]+_1$/),
+    expect.stringMatching(/^tgg_req_[a-z0-9]+_2$/),
+    expect.stringMatching(/^tgg_req_[a-z0-9]+_3$/),
+  ]);
+});
+
+test("keeps invoke ids unique across sdk instances", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true, data: "ok" };
+    },
+  } satisfies TestFlutterBridge;
+
+  const firstSdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const secondSdk = createMiniAppSDK({ permissions: ["user:read"] });
+
+  await Promise.all([firstSdk.getUserId(), secondSdk.getUserId()]);
+
+  expect(calls.map((call) => call.payload.id)).toHaveLength(
+    new Set(calls.map((call) => call.payload.id)).size,
+  );
+  expect(calls.map((call) => String(call.payload.id))).toEqual([
+    expect.stringMatching(/^tgg_req_[a-z0-9]+_1$/),
+    expect.stringMatching(/^tgg_req_[a-z0-9]+_1$/),
+  ]);
 });
 
 test("rejects when Flutter InAppWebView bridge is unavailable", async () => {
@@ -850,6 +881,35 @@ test("downloadFile rejects invalid params locally", () => {
   expect(calls).toEqual([]);
 });
 
+test("saveImageToAlbum asks native to save a data url image", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true, data: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+
+  await expect(
+    runtime.saveImageToAlbum({
+      fileName: "aaa.jpg",
+      dataUrl: "data:image/png;base64,iVBORw0KGgoAAAA",
+    }),
+  ).resolves.toBe(true);
+  expect(calls[0]).toMatchObject({
+    handlerName: "nativeBridge",
+    payload: {
+      method: "saveImageToAlbum",
+      params: {
+        fileName: "aaa.jpg",
+        dataUrl: "data:image/png;base64,iVBORw0KGgoAAAA",
+      },
+    },
+  });
+});
+
 test("getSupportedCapabilities returns native method capabilities", async () => {
   const { getSupportedCapabilities } = await import("../src/index");
 
@@ -868,5 +928,6 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
     "getCommunityInfo",
     "downloadFile",
     "abortDownloadFile",
+    "saveImageToAlbum",
   ]);
 });

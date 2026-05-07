@@ -327,6 +327,46 @@ task.abort();
 - `abort()` 会调用 Native 的 `abortDownloadFile`，并以 `downloadFile:abort` 触发 `fail` 和 `complete`。
 - 如果 `url` 或 `fileName` 不合法，SDK 会本地触发 `fail` 和 `complete`，不会调用 Native。
 
+### `tgg.saveImageToAlbum(options)`
+
+```ts
+tgg.saveImageToAlbum(options: SaveImageToAlbumOptions): Promise<boolean>
+```
+
+使用场景：
+
+- 将 Data URL 格式的图片保存到系统相册。
+- 适合截图、海报、二维码等 H5 已经生成图片数据的场景。
+
+参数：
+
+| 参数      | 类型                      | 必填 | 说明           |
+| --------- | ------------------------- | ---- | -------------- |
+| `options` | `SaveImageToAlbumOptions` | 是   | 保存图片配置。 |
+
+`SaveImageToAlbumOptions` 字段：
+
+| 字段       | 类型                  | 必填 | 说明                                              |
+| ---------- | --------------------- | ---- | ------------------------------------------------- |
+| `dataUrl`  | `string`              | 是   | 图片 Data URL，例如 `data:image/png;base64,...`。 |
+| `fileName` | `string \| undefined` | 否   | 保存图片名称；系统相册不一定展示该名称。          |
+
+返回值：
+
+| 类型               | 说明                                 |
+| ------------------ | ------------------------------------ |
+| `Promise<boolean>` | Native 保存完成后 resolve 保存结果。 |
+
+示例：
+
+```ts
+const saved = await tgg.saveImageToAlbum({
+  fileName: "aaa.jpg",
+  dataUrl: "data:image/png;base64,iVBORw0KGgoAAAA...",
+});
+console.log(saved);
+```
+
 ## 剪贴板 API
 
 ### `tgg.onClipboardTextReceived(callback)`
@@ -860,6 +900,7 @@ tgg.canIUse(capability: string): boolean
 | `"getCommunityInfo"`      | 获取社群基础信息。         |
 | `"downloadFile"`          | 下载远程文件。             |
 | `"abortDownloadFile"`     | 取消下载任务。             |
+| `"saveImageToAlbum"`      | 保存图片到系统相册。       |
 | `"themeChanged"`          | 主题变化事件能力。         |
 | `"backButtonClicked"`     | 原生返回按钮点击事件能力。 |
 | `"downloadFileProgress"`  | 下载进度事件能力。         |
@@ -1096,7 +1137,7 @@ controller.evaluateJavascript(
 
 ```js
 window.flutter_inappwebview.callHandler("nativeBridge", {
-  id: "tgg_req_1",
+  id: "tgg_req_1_1",
   method: "init",
   params: {},
   sdkVersion: "0.1.5",
@@ -1283,7 +1324,8 @@ type MiniAppMethod =
   | "getCommunityId"
   | "getCommunityInfo"
   | "downloadFile"
-  | "abortDownloadFile";
+  | "abortDownloadFile"
+  | "saveImageToAlbum";
 ```
 
 ### `TggCapability`
