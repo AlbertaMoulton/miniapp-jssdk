@@ -63,4 +63,4 @@ TeamgagaBridge.tgg_cb_1(/* value */);
 
 ### Release flow
 
-`scripts/release.mjs` bumps version, runs `pnpm run ready`, does `pnpm pack --dry-run`, commits `package.json`, and creates a tag. Push the tag to trigger the GitHub Actions publish workflow (npm trusted publishing).
+`scripts/release.mjs` bumps version, runs `pnpm run ready`, does `pnpm pack --dry-run`, commits `package.json`, and creates a tag. Push the tag to trigger the GitHub Actions publish workflow, which verifies the tag and publishes the workspace directly to npm with Trusted Publishing.
