@@ -1233,13 +1233,13 @@ createMiniAppSDK(options?: MiniAppSDKOptions): MiniAppSDK
 
 `MiniAppSDKOptions` 字段：
 
-| 字段           | 类型                                        | 说明                                                    |
-| -------------- | ------------------------------------------- | ------------------------------------------------------- |
-| `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                       |
+| 字段           | 类型                                        | 说明                                                                |
+| -------------- | ------------------------------------------- | ------------------------------------------------------------------- |
+| `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                                   |
 | `handlerName`  | `string \| undefined`                       | Flutter InAppWebView JavaScript handler 名。默认 `"nativeBridge"`。 |
-| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                        |
-| `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                            |
-| `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用、扩展能力或声明最低 App 版本。 |
+| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                                    |
+| `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                                        |
+| `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用、扩展能力或声明最低 App 版本。             |
 
 返回值：`MiniAppSDK`。
 
@@ -1262,15 +1262,15 @@ createTggRuntime(options?: TggRuntimeOptions): TggWebApp
 
 `TggRuntimeOptions` 字段：
 
-| 字段           | 类型                                        | 说明                                                   |
-| -------------- | ------------------------------------------- | ------------------------------------------------------ |
-| `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                      |
+| 字段           | 类型                                        | 说明                                                                |
+| -------------- | ------------------------------------------- | ------------------------------------------------------------------- |
+| `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                                   |
 | `handlerName`  | `string \| undefined`                       | Flutter InAppWebView JavaScript handler 名。默认 `"nativeBridge"`。 |
-| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                       |
-| `platform`     | `string \| undefined`                       | 平台标识。默认 `"web"`。                               |
-| `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                           |
-| `version`      | `string \| undefined`                       | core runtime 版本。默认使用包内版本。                  |
-| `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用或扩展能力。                   |
+| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                                    |
+| `platform`     | `string \| undefined`                       | 平台标识。默认 `"web"`。                                            |
+| `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                                        |
+| `version`      | `string \| undefined`                       | core runtime 版本。默认使用包内版本。                               |
+| `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用或扩展能力。                                |
 
 返回值：`TggWebApp`，并会挂载到 `window.tgg`。
 
