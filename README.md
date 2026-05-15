@@ -244,6 +244,13 @@ Configure npm Trusted Publishing for `@teamgaga/miniapp-jssdk`:
 - Owner: `AlbertaMoulton`
 - Repository: `miniapp-jssdk`
 - Workflow filename: `publish.yml`
+- `package.json` repository URL: `git+https://github.com/AlbertaMoulton/miniapp-jssdk.git`
+
+If this package was previously published from another repository, update the npm
+package's Trusted Publisher settings before the next release. npm allows only
+one Trusted Publisher per package, and stale settings from the old repository
+will cause GitHub Actions publishes to fail at `npm publish`, often with
+`E404`/permission-style errors.
 
 All package releases must go through GitHub Actions. Do not run `npm publish`
 locally. The supported release flow is:

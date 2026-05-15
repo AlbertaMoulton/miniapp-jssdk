@@ -48,4 +48,22 @@ jobs:
           pnpm pack --pack-destination "$GITHUB_WORKSPACE/.release"
 
       - name: Publish package
-        run: npm publish .release/*.tgz --access public
+        run: |
+          set +e
+          npm publish .release/*.tgz --access public 2>&1 | tee publish.log
+          status=${PIPESTATUS[0]}
+          if [ "$status" -ne 0 ]; then
+            {
+              echo "## Publish troubleshooting"
+              echo
+              echo "If npm publish failed with E404 while using Trusted Publishing, verify the npm package settings still point to this repository:"
+              echo
+              echo "- GitHub owner/user: \`AlbertaMoulton\`"
+              echo "- Repository: \`miniapp-jssdk\`"
+              echo "- Workflow file: \`publish.yml\`"
+              echo "- \`package.json\` repository URL matches this repository exactly"
+              echo
+              echo "This package was previously published from a different repository, so npm Trusted Publisher settings may need to be updated after the repo move."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit "$status"
+          fi
