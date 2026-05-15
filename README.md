@@ -245,7 +245,17 @@ Configure npm Trusted Publishing for `@teamgaga/miniapp-jssdk`:
 - Repository: `miniapp-jssdk`
 - Workflow filename: `publish.yml`
 
-Then create a release tag from `main`:
+All package releases must go through GitHub Actions. Do not run `npm publish`
+locally. The supported release flow is:
+
+1. Update `main` with any workflow or documentation changes needed for the
+   release process.
+2. Create the release tag from `main`.
+3. Push `main` and the new tag to `origin`.
+4. Let `.github/workflows/publish.yml` publish the package through npm Trusted
+   Publishing.
+
+Create a release tag from `main` with:
 
 ```bash
 pnpm run release:patch
