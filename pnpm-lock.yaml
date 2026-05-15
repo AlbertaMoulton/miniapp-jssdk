@@ -29,6 +29,9 @@ importers:
       rollup:
         specifier: latest
         version: 4.60.2
+      terser:
+        specifier: 5.46.2
+        version: 5.46.2
       tslib:
         specifier: latest
         version: 2.8.1
