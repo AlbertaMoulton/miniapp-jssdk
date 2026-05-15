@@ -46,7 +46,7 @@
   },
   "scripts": {
     "ready": "pnpm run check && pnpm run test && pnpm run build",
-    "build": "pnpm run clean && node scripts/build.mjs && pnpm run minify && tsc -p tsconfig.json --emitDeclarationOnly",
+    "build": "node scripts/sync-version.mjs && pnpm run clean && node scripts/build.mjs && pnpm run minify && tsc -p tsconfig.json --emitDeclarationOnly",
     "check": "vp check",
     "check:fix": "vp check --fix",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",
@@ -59,6 +59,7 @@
     "release:major": "node scripts/release.mjs major",
     "release:minor": "node scripts/release.mjs minor",
     "release:patch": "node scripts/release.mjs patch",
+    "sync:version": "node scripts/sync-version.mjs",
     "test": "vp test",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm run build"

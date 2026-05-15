@@ -145,7 +145,7 @@ H5 calls native through:
 window.flutter_inappwebview.callHandler("nativeBridge", {
   id: "tgg_req_1_1",
   method: "init",
-  sdkVersion: "0.1.5",
+  sdkVersion: "0.1.11",
   timestamp: Date.now(),
 });
 ```

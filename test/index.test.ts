@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vite-plus/test";
 
+import { SDK_VERSION } from "../src/constants";
 import {
   createMiniAppSDK,
   createTggRuntime,
@@ -57,7 +58,7 @@ test("calls Flutter InAppWebView nativeBridge with invoke payload", async () => 
   expect(calls[0].payload).toMatchObject({
     id: expect.stringMatching(REQUEST_ID_PATTERN),
     method: "getUserId",
-    sdkVersion: "0.1.5",
+    sdkVersion: SDK_VERSION,
     timestamp: new Date("2026-05-06T00:00:00.000Z").getTime(),
   });
 });
@@ -237,7 +238,7 @@ test("posts JSON invoke payloads through webview_flutter nativeBridge", async ()
   expect(messages[0]).toMatchObject({
     id: expect.stringMatching(REQUEST_ID_PATTERN),
     method: "getUserId",
-    sdkVersion: "0.1.5",
+    sdkVersion: SDK_VERSION,
     timestamp: new Date("2026-05-06T00:00:00.000Z").getTime(),
   });
 });
@@ -365,8 +366,8 @@ test("rejects when no host bridge is unavailable", async () => {
 
 test("getTgg returns the injected runtime", () => {
   const runtime = {
-    version: "0.1.5",
-    sdkVersion: "0.1.5",
+    version: SDK_VERSION,
+    sdkVersion: SDK_VERSION,
     platform: "web",
     ready: vi.fn(),
   };

@@ -27,3 +27,13 @@ test("package import entry points to an ESM bundle", async () => {
   expect(packageJson.exports?.["./core"]?.import).toBe("./dist/core.esm.js");
   expect(packageJson.exports?.["./core"]?.default).toBe("./dist/core.js");
 });
+
+test("source SDK version matches package version", async () => {
+  const packageJson = JSON.parse(await readFile(resolve(packageRoot, "package.json"), "utf8")) as {
+    version: string;
+  };
+  const constantsSource = await readFile(resolve(packageRoot, "src/constants.ts"), "utf8");
+  const versionMatch = constantsSource.match(/export const SDK_VERSION = "([^"]+)";/);
+
+  expect(versionMatch?.[1]).toBe(packageJson.version);
+});

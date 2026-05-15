@@ -77,11 +77,12 @@ try {
 
 packageJson.version = nextVersion;
 writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+run("pnpm", ["run", "sync:version"]);
 
 run("pnpm", ["run", "ready"]);
 run("pnpm", ["pack", "--dry-run"]);
 
-run("git", ["add", "package.json"]);
+run("git", ["add", "package.json", "src/constants.ts"]);
 run("git", ["commit", "-m", `release: ${tagName}`]);
 run("git", ["tag", tagName]);
 
