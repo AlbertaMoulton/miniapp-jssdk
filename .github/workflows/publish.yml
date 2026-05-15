@@ -48,4 +48,4 @@ jobs:
           pnpm pack --pack-destination "$GITHUB_WORKSPACE/.release"
 
       - name: Publish package
-        run: npm publish .release/*.tgz --access public
+        run: npm publish .release/*.tgz --access public --ignore-scripts
