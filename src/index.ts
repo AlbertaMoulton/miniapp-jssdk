@@ -51,4 +51,5 @@ export type {
   TggHeaderColor,
   TggRuntimeOptions,
   TggWebApp,
+  WebViewFlutterJavaScriptChannel,
 } from "./types";

@@ -73,6 +73,10 @@ export type FlutterInAppWebViewBridge = {
   callHandler(handlerName: string, payload: unknown): Promise<unknown>;
 };
 
+export type WebViewFlutterJavaScriptChannel = {
+  postMessage(message: string): void;
+};
+
 export type BridgeTransport = {
   send<T>(request: MiniAppInvokeRequest): Promise<T>;
 };
@@ -239,7 +243,9 @@ export type CommunityInfo = {
 declare global {
   interface Window {
     flutter_inappwebview?: FlutterInAppWebViewBridge;
+    nativeBridge?: WebViewFlutterJavaScriptChannel;
     tgg?: TggWebApp;
     __tgg_emit?: (eventName: string, payload?: unknown) => void;
+    __tgg_resolve?: (id: string, envelope: MiniAppInvokeResponse | unknown) => void;
   }
 }

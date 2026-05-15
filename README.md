@@ -6,7 +6,7 @@ JavaScript SDK for TeamGaga miniapps running inside the TeamGaga App Flutter Web
 
 This package now has two surfaces:
 
-- `dist/core.js`: runtime code for Flutter WebView `UserScript` injection. It mounts `window.tgg`, talks to Flutter InAppWebView through `callHandler`, handles host events, and exposes Mini App APIs.
+- `dist/core.js`: runtime code for Flutter WebView injection. It mounts `window.tgg`, talks to native through either Flutter InAppWebView `callHandler` or webview_flutter `JavaScriptChannel`, handles host events, and exposes Mini App APIs.
 - `@teamgaga/miniapp-jssdk`: developer-facing TypeScript SDK. It provides types, helper functions, and a typed `tgg` proxy that forwards to the injected `window.tgg`.
 
 The npm SDK does not create a fake runtime by default. In production, `window.tgg`
@@ -152,6 +152,19 @@ window.flutter_inappwebview.callHandler("nativeBridge", {
 
 Native responses should use `{ success: true, data }` for success and
 `{ success: false, error: { code, message } }` for failures.
+
+For `webview_flutter`, expose a JavaScriptChannel named `nativeBridge`. The SDK
+posts `JSON.stringify(request)` through `window.nativeBridge.postMessage(...)`;
+the host should respond by evaluating:
+
+```js
+window.__tgg_resolve("tgg_req_1_1", {
+  success: true,
+  data: {},
+});
+```
+
+If both host transports are available, the SDK uses Flutter InAppWebView.
 
 The runtime performs local checks before native calls:
 

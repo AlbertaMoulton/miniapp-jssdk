@@ -6,7 +6,7 @@
 
 TeamGaga MiniApp SDK 分为两层：
 
-- `core.js`：由 TeamGaga App 的 Flutter InAppWebView 在运行时注入，负责创建 `window.tgg`，并通过 `window.flutter_inappwebview.callHandler("nativeBridge", payload)` 和 Native 通信。
+- `core.js`：由 TeamGaga App 的 Flutter WebView 容器在运行时注入，负责创建 `window.tgg`，并通过 Flutter InAppWebView `callHandler` 或 webview_flutter `JavaScriptChannel` 和 Native 通信。
 - `@teamgaga/miniapp-jssdk`：发布到 npm，负责提供 TypeScript 类型、`tgg` 代理对象和便捷函数。
 
 小程序开发者通常只需要安装 npm 包：
@@ -1133,7 +1133,7 @@ controller.evaluateJavascript(
 
 ### Flutter H5 调用 Native
 
-`core.js` 内部会通过 Flutter InAppWebView 调用 Native：
+`core.js` 内部会优先通过 Flutter InAppWebView 调用 Native：
 
 ```js
 window.flutter_inappwebview.callHandler("nativeBridge", {
@@ -1167,6 +1167,20 @@ controller.addJavaScriptHandler(
   },
 );
 ```
+
+如果宿主使用 `webview_flutter`，应注册名为 `nativeBridge` 的
+`JavaScriptChannel`。SDK 会调用
+`window.nativeBridge.postMessage(JSON.stringify(request))`，宿主处理后通过
+执行以下 JS 将响应返回给 SDK：
+
+```js
+window.__tgg_resolve("tgg_req_1_1", {
+  success: true,
+  data: {},
+});
+```
+
+如果两个宿主通道同时存在，SDK 会优先使用 Flutter InAppWebView。
 
 Native 返回成功：
 
@@ -1222,7 +1236,7 @@ createMiniAppSDK(options?: MiniAppSDKOptions): MiniAppSDK
 | 字段           | 类型                                        | 说明                                                    |
 | -------------- | ------------------------------------------- | ------------------------------------------------------- |
 | `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                       |
-| `handlerName`  | `string \| undefined`                       | Flutter JavaScript handler 名。默认 `"nativeBridge"`。  |
+| `handlerName`  | `string \| undefined`                       | Flutter InAppWebView JavaScript handler 名。默认 `"nativeBridge"`。 |
 | `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                        |
 | `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                            |
 | `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用、扩展能力或声明最低 App 版本。 |
@@ -1251,7 +1265,7 @@ createTggRuntime(options?: TggRuntimeOptions): TggWebApp
 | 字段           | 类型                                        | 说明                                                   |
 | -------------- | ------------------------------------------- | ------------------------------------------------------ |
 | `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                      |
-| `handlerName`  | `string \| undefined`                       | Flutter JavaScript handler 名。默认 `"nativeBridge"`。 |
+| `handlerName`  | `string \| undefined`                       | Flutter InAppWebView JavaScript handler 名。默认 `"nativeBridge"`。 |
 | `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                       |
 | `platform`     | `string \| undefined`                       | 平台标识。默认 `"web"`。                               |
 | `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                           |

@@ -1,6 +1,6 @@
 import {
   DEFAULT_NATIVE_HANDLER_NAME,
-  FLUTTER_BRIDGE_UNAVAILABLE_MESSAGE,
+  NATIVE_BRIDGE_UNAVAILABLE_MESSAGE,
   REQUEST_ID_PREFIX,
   SDK_VERSION,
 } from "./constants";
@@ -14,6 +14,7 @@ import type {
   MiniAppInvokeResponse,
   MiniAppMethod,
   MiniAppNativeError,
+  WebViewFlutterJavaScriptChannel,
 } from "./types";
 
 type MiniAppBridgeClientOptions = {
@@ -34,7 +35,7 @@ export const createFlutterInAppWebViewTransport = (
     const bridge = getFlutterBridge();
 
     if (!bridge) {
-      throw createMiniAppError(FLUTTER_BRIDGE_UNAVAILABLE_MESSAGE);
+      throw createMiniAppError(NATIVE_BRIDGE_UNAVAILABLE_MESSAGE);
     }
 
     const response = await bridge.callHandler(handlerName, request);
@@ -42,10 +43,33 @@ export const createFlutterInAppWebViewTransport = (
   },
 });
 
+export const createWebViewFlutterTransport = (): BridgeTransport => ({
+  send<T>(request: MiniAppInvokeRequest): Promise<T> {
+    const bridge = getWebViewFlutterBridge();
+
+    if (!bridge) {
+      throw createMiniAppError(NATIVE_BRIDGE_UNAVAILABLE_MESSAGE);
+    }
+
+    installWebViewFlutterResolver();
+
+    return new Promise<T>((resolve, reject) => {
+      pendingWebViewFlutterRequests.set(request.id, { resolve, reject });
+      try {
+        bridge.postMessage(JSON.stringify(request));
+      } catch (error) {
+        pendingWebViewFlutterRequests.delete(request.id);
+        reject(error);
+      }
+    });
+  },
+});
+
 export const createBridgeClient = (
   options: MiniAppBridgeClientOptions = {},
 ): MiniAppBridgeClient => {
-  const transport = createFlutterInAppWebViewTransport(options.handlerName);
+  const flutterTransport = createFlutterInAppWebViewTransport(options.handlerName);
+  const webViewFlutterTransport = createWebViewFlutterTransport();
   const sdkVersion = options.sdkVersion ?? SDK_VERSION;
   bridgeClientSequence += 1;
   const clientId = bridgeClientSequence.toString(36);
@@ -65,7 +89,15 @@ export const createBridgeClient = (
       timestamp: Date.now(),
     };
 
-    return transport.send<T>(request);
+    if (getFlutterBridge()) {
+      return flutterTransport.send<T>(request);
+    }
+
+    if (getWebViewFlutterBridge()) {
+      return webViewFlutterTransport.send<T>(request);
+    }
+
+    return Promise.reject(createMiniAppError(NATIVE_BRIDGE_UNAVAILABLE_MESSAGE));
   };
 
   return { invoke };
@@ -82,6 +114,54 @@ const getFlutterBridge = (): FlutterInAppWebViewBridge | undefined => {
   }
 
   return bridge;
+};
+
+const getWebViewFlutterBridge = (): WebViewFlutterJavaScriptChannel | undefined => {
+  const global = getRuntimeGlobal() as typeof globalThis & {
+    nativeBridge?: WebViewFlutterJavaScriptChannel;
+  };
+  const bridge = global.nativeBridge;
+
+  if (!bridge || typeof bridge.postMessage !== "function") {
+    return undefined;
+  }
+
+  return bridge;
+};
+
+type PendingWebViewFlutterRequest = {
+  resolve(value: unknown): void;
+  reject(reason: unknown): void;
+};
+
+const pendingWebViewFlutterRequests = new Map<string, PendingWebViewFlutterRequest>();
+
+const installWebViewFlutterResolver = (): void => {
+  const global = getRuntimeGlobal() as typeof globalThis & {
+    __tgg_resolve?: (id: string, envelope: unknown) => void;
+  };
+
+  if (global.__tgg_resolve === resolveWebViewFlutterRequest) {
+    return;
+  }
+
+  global.__tgg_resolve = resolveWebViewFlutterRequest;
+};
+
+const resolveWebViewFlutterRequest = (id: string, envelope: unknown): void => {
+  const pendingRequest = pendingWebViewFlutterRequests.get(id);
+
+  if (!pendingRequest) {
+    return;
+  }
+
+  pendingWebViewFlutterRequests.delete(id);
+
+  try {
+    pendingRequest.resolve(normalizeNativeResponse(envelope));
+  } catch (error) {
+    pendingRequest.reject(error);
+  }
 };
 
 const normalizeNativeResponse = <T>(response: unknown): T => {

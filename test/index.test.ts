@@ -19,6 +19,9 @@ type TestGlobal = typeof globalThis & Record<string, unknown>;
 type TestFlutterBridge = {
   callHandler(handlerName: string, payload: unknown): Promise<unknown>;
 };
+type TestJavaScriptChannel = {
+  postMessage(message: string): void;
+};
 
 const testGlobal = globalThis as TestGlobal;
 const REQUEST_ID_PATTERN = /^tgg_req_[a-z0-9]+_\d+$/;
@@ -32,7 +35,9 @@ afterEach(() => {
   vi.useRealTimers();
   delete testGlobal.tgg;
   delete testGlobal.__tgg_emit;
+  delete testGlobal.__tgg_resolve;
   delete testGlobal.flutter_inappwebview;
+  delete testGlobal.nativeBridge;
 });
 
 test("calls Flutter InAppWebView nativeBridge with invoke payload", async () => {
@@ -212,6 +217,72 @@ test("parses JSON string native response envelopes", async () => {
   await expect(sdk.getCommunityId()).resolves.toBe("community-123");
 });
 
+test("posts JSON invoke payloads through webview_flutter nativeBridge", async () => {
+  const messages: Record<string, unknown>[] = [];
+  testGlobal.nativeBridge = {
+    postMessage(message: string) {
+      const request = JSON.parse(message) as Record<string, unknown>;
+      messages.push(request);
+      (testGlobal.__tgg_resolve as (id: string, envelope: unknown) => void)(request.id as string, {
+        success: true,
+        data: "user-123",
+      });
+    },
+  } satisfies TestJavaScriptChannel;
+
+  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+
+  await expect(sdk.getUserId()).resolves.toBe("user-123");
+  expect(messages).toHaveLength(1);
+  expect(messages[0]).toMatchObject({
+    id: expect.stringMatching(REQUEST_ID_PATTERN),
+    method: "getUserId",
+    sdkVersion: "0.1.5",
+    timestamp: new Date("2026-05-06T00:00:00.000Z").getTime(),
+  });
+});
+
+test("normalizes webview_flutter error response envelopes", async () => {
+  testGlobal.nativeBridge = {
+    postMessage(message: string) {
+      const request = JSON.parse(message) as Record<string, unknown>;
+      (testGlobal.__tgg_resolve as (id: string, envelope: unknown) => void)(request.id as string, {
+        success: false,
+        error: { code: "USER_UNAVAILABLE", message: "User is unavailable" },
+      });
+    },
+  } satisfies TestJavaScriptChannel;
+
+  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+
+  await expect(sdk.getUserInfo()).rejects.toMatchObject({
+    code: "USER_UNAVAILABLE",
+    message: "User is unavailable",
+  });
+});
+
+test("prefers Flutter InAppWebView when both host transports are available", async () => {
+  const flutterCalls: Record<string, unknown>[] = [];
+  const webviewMessages: string[] = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(_handlerName: string, payload: unknown) {
+      flutterCalls.push(payload as Record<string, unknown>);
+      return { success: true, data: "flutter-user" };
+    },
+  } satisfies TestFlutterBridge;
+  testGlobal.nativeBridge = {
+    postMessage(message: string) {
+      webviewMessages.push(message);
+    },
+  } satisfies TestJavaScriptChannel;
+
+  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+
+  await expect(sdk.getUserId()).resolves.toBe("flutter-user");
+  expect(flutterCalls).toHaveLength(1);
+  expect(webviewMessages).toHaveLength(0);
+});
+
 test("accepts primitive native responses as resolved values", async () => {
   testGlobal.flutter_inappwebview = {
     async callHandler() {
@@ -286,10 +357,10 @@ test("keeps invoke ids unique across sdk instances", async () => {
   ]);
 });
 
-test("rejects when Flutter InAppWebView bridge is unavailable", async () => {
+test("rejects when no host bridge is unavailable", async () => {
   const sdk = createMiniAppSDK();
 
-  await expect(sdk.ready()).rejects.toThrow("TeamGaga Flutter InAppWebView bridge is unavailable");
+  await expect(sdk.ready()).rejects.toThrow("TeamGaga native bridge is unavailable");
 });
 
 test("getTgg returns the injected runtime", () => {
