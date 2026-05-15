@@ -249,7 +249,7 @@ Then create a release tag from `main`:
 
 ```bash
 pnpm run release:patch
-git push origin main v0.1.8
+git push origin main v<version>
 ```
 
-Use `minor` or `major` when needed. The release script updates `package.json`, runs checks, tests, build, and `pnpm pack --dry-run`, then commits the version bump and creates the tag. GitHub Actions verifies the tag, then publishes the workspace directly to npm with Trusted Publishing.
+Replace `<version>` with the tag created by the release script. Use `minor` or `major` when needed. The release script updates `package.json`, runs checks, tests, build, and `pnpm pack --dry-run`, then commits the version bump and creates the tag. GitHub Actions verifies the tag, then publishes the workspace directly to npm with Trusted Publishing.
