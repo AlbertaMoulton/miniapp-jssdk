@@ -6,7 +6,7 @@
 
 TeamGaga MiniApp SDK 分为两层：
 
-- `core.js`：由 TeamGaga App 的 Flutter WebView 容器在运行时注入，负责创建 `window.tgg`，并通过 Flutter InAppWebView `callHandler` 或 webview_flutter `JavaScriptChannel` 和 Native 通信。
+- `core.js`：由 TeamGaga App 的宿主容器在运行时注入，负责创建 `window.tgg`，并通过宿主提供的 JS bridge 和 Native 通信。
 - `@teamgaga/miniapp-jssdk`：发布到 npm，负责提供 TypeScript 类型、`tgg` 代理对象和便捷函数。
 
 小程序开发者通常只需要安装 npm 包：
@@ -66,7 +66,6 @@ SDK 本地校验可能返回这些错误码：
 
 | 错误码                   | 说明                                               |
 | ------------------------ | -------------------------------------------------- |
-| `PERMISSION_DENIED`      | 当前小程序缺少调用该能力所需权限。                 |
 | `UNSUPPORTED_CAPABILITY` | 当前 App 版本、能力开关或 runtime 不支持该能力。   |
 | `INVALID_HEADER_COLOR`   | `setHeaderColor` 参数不是主题色 key 或 `#RRGGBB`。 |
 
@@ -1237,7 +1236,6 @@ createMiniAppSDK(options?: MiniAppSDKOptions): MiniAppSDK
 | -------------- | ------------------------------------------- | ------------------------------------------------------------------- |
 | `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                                   |
 | `handlerName`  | `string \| undefined`                       | Flutter InAppWebView JavaScript handler 名。默认 `"nativeBridge"`。 |
-| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                                    |
 | `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                                        |
 | `capabilities` | `readonly CapabilityConfig[] \| undefined`  | 能力覆盖配置，可用于禁用、扩展能力或声明最低 App 版本。             |
 
@@ -1266,7 +1264,6 @@ createTggRuntime(options?: TggRuntimeOptions): TggWebApp
 | -------------- | ------------------------------------------- | ------------------------------------------------------------------- |
 | `appVersion`   | `string \| undefined`                       | TeamGaga App 版本。默认空字符串。                                   |
 | `handlerName`  | `string \| undefined`                       | Flutter InAppWebView JavaScript handler 名。默认 `"nativeBridge"`。 |
-| `permissions`  | `readonly MiniAppPermission[] \| undefined` | 当前小程序允许使用的权限白名单。                                    |
 | `platform`     | `string \| undefined`                       | 平台标识。默认 `"web"`。                                            |
 | `sdkVersion`   | `string \| undefined`                       | SDK 版本。默认使用包内版本。                                        |
 | `version`      | `string \| undefined`                       | core runtime 版本。默认使用包内版本。                               |

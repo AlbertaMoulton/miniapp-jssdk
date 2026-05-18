@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the legacy `TeamgagaBridge.postMessage` protocol with a clean Flutter InAppWebView `callHandler` bridge, runtime event entrypoint, capability checks, and permission whitelist.
+**Goal:** Replace the legacy `TeamgagaBridge.postMessage` protocol with a clean Flutter InAppWebView `callHandler` bridge, runtime event entrypoint, and capability checks.
 
-**Architecture:** `src/bridge.ts` owns the Flutter InAppWebView transport and response normalization. `src/sdk.ts` owns developer API ergonomics and delegates every native API through a single `invoke`. `src/core-runtime.ts` mounts `window.tgg`, installs `window.__tgg_emit`, and configures capability and permission behavior for the injected runtime.
+**Architecture:** `src/bridge.ts` owns the Flutter InAppWebView transport and response normalization. `src/sdk.ts` owns developer API ergonomics and delegates every native API through a single `invoke`. `src/core-runtime.ts` mounts `window.tgg`, installs `window.__tgg_emit`, and configures capability behavior for the injected runtime.
 
 **Tech Stack:** TypeScript, Rollup, vite-plus tests, Flutter InAppWebView JavaScript handler contract.
 
@@ -12,13 +12,13 @@
 
 ## File Structure
 
-- Modify `src/types.ts`: remove legacy bridge callback types; add invoke request/response, Flutter bridge, transport, permission, capability, runtime, and event global types.
+- Modify `src/types.ts`: remove legacy bridge callback types; add invoke request/response, Flutter bridge, transport, capability, runtime, and event global types.
 - Modify `src/bridge.ts`: replace callback-id `postMessage` client with `createBridgeClient` built on `window.flutter_inappwebview.callHandler`.
 - Modify `src/sdk.ts`: expose `invoke`, remove `resolve`/`reject`, preserve high-level API helpers, BackButton listener behavior, and generic CustomEvent dispatch.
-- Modify `src/core-runtime.ts`: install runtime metadata, permissions, capabilities, and `window.__tgg_emit`.
+- Modify `src/core-runtime.ts`: install runtime metadata, capabilities, and `window.__tgg_emit`.
 - Modify `src/constants.ts`: replace callback prefix with invoke id prefix and handler/event constants.
 - Modify `src/index.ts`: update exported types to match the new public surface.
-- Modify `test/index.test.ts`: rewrite bridge tests around `flutter_inappwebview.callHandler`, event emission, capability, and permission behavior.
+- Modify `test/index.test.ts`: rewrite bridge tests around `flutter_inappwebview.callHandler`, event emission, and capability behavior.
 - Modify `README.md` and `docs/developer-api.md`: document UserScript, `addJavaScriptHandler`, `callHandler`, `evaluateJavascript`, and `window.__tgg_emit`.
 
 ## Task 1: Rewrite Tests For The New Protocol
@@ -50,7 +50,7 @@ test("calls Flutter InAppWebView nativeBridge with invoke payload", async () => 
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserId()).resolves.toBe("user-123");
   expect(calls).toHaveLength(1);
@@ -74,7 +74,7 @@ test("normalizes successful native response envelopes", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserInfo()).resolves.toEqual({ userId: "user-123" });
 });
@@ -89,7 +89,7 @@ test("rejects native error response envelopes", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserInfo()).rejects.toMatchObject({
     code: "USER_UNAVAILABLE",
@@ -104,7 +104,7 @@ test("accepts primitive native responses as resolved values", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getOauthCode()).resolves.toBe("oauth-code-123");
 });
@@ -135,7 +135,6 @@ test("creates runtime and installs the Flutter event emitter", () => {
   const runtime = createTggRuntime({
     appVersion: "3.2.0",
     platform: "ios",
-    permissions: ["system:read"],
   });
 
   expect(testGlobal.tgg).toBe(runtime);
@@ -161,33 +160,16 @@ test("BackButton onClick fires through window.__tgg_emit", () => {
 });
 ```
 
-- [ ] Add capability and permission tests:
+- [ ] Add capability tests:
 
 ```ts
-test("canIUse respects permission requirements", () => {
-  const runtime = createTggRuntime({ permissions: ["system:read"] });
-
-  expect(runtime.canIUse("getSystemInfo")).toBe(true);
-  expect(runtime.canIUse("getUserInfo")).toBe(false);
-  expect(runtime.canIUse("setHeaderColor")).toBe(true);
-  expect(runtime.canIUse("unknown")).toBe(false);
-});
-
-test("protected methods reject locally when permission is missing", async () => {
-  const calls: unknown[] = [];
-  testGlobal.flutter_inappwebview = {
-    async callHandler(_handlerName: string, payload: unknown) {
-      calls.push(payload);
-      return { success: true, data: { userId: "user-123" } };
-    },
-  } satisfies TestFlutterBridge;
-
+test("canIUse reflects capability support", () => {
   const runtime = createTggRuntime();
 
-  await expect(runtime.getUserInfo()).rejects.toMatchObject({
-    code: "PERMISSION_DENIED",
-  });
-  expect(calls).toEqual([]);
+  expect(runtime.canIUse("getSystemInfo")).toBe(true);
+  expect(runtime.canIUse("getUserInfo")).toBe(true);
+  expect(runtime.canIUse("setHeaderColor")).toBe(true);
+  expect(runtime.canIUse("unknown")).toBe(false);
 });
 ```
 
@@ -221,8 +203,6 @@ export const SDK_VERSION = "0.1.5";
 - [ ] In `src/types.ts`, add:
 
 ```ts
-export type MiniAppPermission = "user:read" | "system:read" | "community:read";
-
 export type MiniAppInvokeRequest = {
   id: string;
   method: MiniAppMethod;
@@ -257,7 +237,6 @@ export type BridgeTransport = {
 
 export type CapabilityConfig = {
   name: TggCapability;
-  permission?: MiniAppPermission;
   minAppVersion?: string;
   enabled?: boolean;
 };
@@ -268,7 +247,6 @@ export type CapabilityConfig = {
 ```ts
 export type MiniAppSDKOptions = {
   handlerName?: string;
-  permissions?: readonly MiniAppPermission[];
   sdkVersion?: string;
   capabilities?: readonly CapabilityConfig[];
 };
@@ -300,7 +278,7 @@ declare global {
 }
 ```
 
-- [ ] Update `src/index.ts` type exports to remove `MiniAppBridge`, `MiniAppRequest`, and add `BridgeTransport`, `FlutterInAppWebViewBridge`, `CapabilityConfig`, `MiniAppInvokeRequest`, `MiniAppInvokeResponse`, and `MiniAppPermission`.
+- [ ] Update `src/index.ts` type exports to remove `MiniAppBridge`, `MiniAppRequest`, and add `BridgeTransport`, `FlutterInAppWebViewBridge`, `CapabilityConfig`, `MiniAppInvokeRequest`, and `MiniAppInvokeResponse`.
 
 - [ ] Run `pnpm run typecheck`.
       Expected: type errors in `src/bridge.ts`, `src/sdk.ts`, and tests because implementation still references removed types.
@@ -457,25 +435,24 @@ const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "setHeaderColor" },
   { name: "BackButton.show" },
   { name: "BackButton.hide" },
-  { name: "getOauthCode", permission: "user:read" },
-  { name: "getUserId", permission: "user:read" },
-  { name: "getUserInfo", permission: "user:read" },
-  { name: "getSystemInfo", permission: "system:read" },
-  { name: "getCommunityId", permission: "community:read" },
-  { name: "getCommunityInfo", permission: "community:read" },
+  { name: "getOauthCode" },
+  { name: "getUserId" },
+  { name: "getUserInfo" },
+  { name: "getSystemInfo" },
+  { name: "getCommunityId" },
+  { name: "getCommunityInfo" },
   { name: "themeChanged" },
   { name: "backButtonClicked" },
 ];
 ```
 
-- [ ] In `createMiniAppSDK`, build `permissions`, `capabilities`, and `bridgeClient` from options:
+- [ ] In `createMiniAppSDK`, build `capabilities` and `bridgeClient` from options:
 
 ```ts
 const bridgeClient = createBridgeClient({
   handlerName: options.handlerName,
   sdkVersion: options.sdkVersion,
 });
-const permissions = new Set(options.permissions ?? []);
 const capabilities = new Map<string, CapabilityConfig>(
   [...DEFAULT_CAPABILITIES, ...(options.capabilities ?? [])].map((capability) => [
     capability.name,
@@ -494,10 +471,6 @@ const canIUse = (capabilityName: string): boolean => {
     return false;
   }
 
-  if (capability.permission && !permissions.has(capability.permission)) {
-    return false;
-  }
-
   return true;
 };
 ```
@@ -508,8 +481,8 @@ const canIUse = (capabilityName: string): boolean => {
 const invoke = <T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T> => {
   if (!canIUse(method)) {
     return Promise.reject(
-      createMiniAppError(`Permission denied or unsupported capability: ${method}`, {
-        code: "PERMISSION_DENIED",
+      createMiniAppError(`Unsupported capability: ${method}`, {
+        code: "UNSUPPORTED_CAPABILITY",
       }),
     );
   }
@@ -523,7 +496,7 @@ const invoke = <T>(method: MiniAppMethod, params?: Record<string, unknown>): Pro
 - [ ] Keep `receiveEvent` and BackButton listener behavior unchanged except that it now lives on a runtime without callback methods.
 
 - [ ] Run `pnpm test test/index.test.ts`.
-      Expected: bridge and permission tests pass; `createTggRuntime` and `__tgg_emit` tests still fail until runtime install is updated.
+      Expected: bridge and capability tests pass; `createTggRuntime` and `__tgg_emit` tests still fail until runtime install is updated.
 
 ## Task 5: Install Runtime Event Global And Metadata
 

@@ -50,7 +50,7 @@ test("calls Flutter InAppWebView nativeBridge with invoke payload", async () => 
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserId()).resolves.toBe("user-123");
   expect(calls).toHaveLength(1);
@@ -159,7 +159,7 @@ test("normalizes successful native response envelopes", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserInfo()).resolves.toEqual({
     userId: "user-123",
@@ -179,7 +179,7 @@ test("rejects native error response envelopes", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserInfo()).rejects.toMatchObject({
     code: "USER_UNAVAILABLE",
@@ -198,7 +198,7 @@ test("rejects native error response shorthand", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getOauthCode()).rejects.toMatchObject({
     code: "OAUTH_UNAVAILABLE",
@@ -213,7 +213,7 @@ test("parses JSON string native response envelopes", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["community:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getCommunityId()).resolves.toBe("community-123");
 });
@@ -231,7 +231,7 @@ test("posts JSON invoke payloads through webview_flutter nativeBridge", async ()
     },
   } satisfies TestJavaScriptChannel;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserId()).resolves.toBe("user-123");
   expect(messages).toHaveLength(1);
@@ -254,7 +254,7 @@ test("normalizes webview_flutter error response envelopes", async () => {
     },
   } satisfies TestJavaScriptChannel;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserInfo()).rejects.toMatchObject({
     code: "USER_UNAVAILABLE",
@@ -277,7 +277,7 @@ test("prefers Flutter InAppWebView when both host transports are available", asy
     },
   } satisfies TestJavaScriptChannel;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getUserId()).resolves.toBe("flutter-user");
   expect(flutterCalls).toHaveLength(1);
@@ -291,9 +291,35 @@ test("accepts primitive native responses as resolved values", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const sdk = createMiniAppSDK();
 
   await expect(sdk.getOauthCode()).resolves.toBe("oauth-code-123");
+});
+
+test("getCommunityInfo resolves directly through native bridge", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      const request = payload as Record<string, unknown>;
+      calls.push({ handlerName, payload: request });
+
+      return {
+        success: true,
+        data: {
+          communityId: "community-123",
+          name: "Test Community",
+        },
+      };
+    },
+  } satisfies TestFlutterBridge;
+
+  const sdk = createMiniAppSDK();
+
+  await expect(sdk.getCommunityInfo()).resolves.toEqual({
+    communityId: "community-123",
+    name: "Test Community",
+  });
+  expect(calls.map((call) => call.payload.method)).toEqual(["getCommunityInfo"]);
 });
 
 test("exposes all known miniapp API helper methods", () => {
@@ -319,7 +345,7 @@ test("keeps invoke ids unique across requests", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const sdk = createMiniAppSDK({ permissions: ["user:read", "community:read"] });
+  const sdk = createMiniAppSDK();
 
   await sdk.getUserId();
   await sdk.getCommunityId();
@@ -344,8 +370,8 @@ test("keeps invoke ids unique across sdk instances", async () => {
     },
   } satisfies TestFlutterBridge;
 
-  const firstSdk = createMiniAppSDK({ permissions: ["user:read"] });
-  const secondSdk = createMiniAppSDK({ permissions: ["user:read"] });
+  const firstSdk = createMiniAppSDK();
+  const secondSdk = createMiniAppSDK();
 
   await Promise.all([firstSdk.getUserId(), secondSdk.getUserId()]);
 
@@ -544,7 +570,6 @@ test("creates runtime and installs the Flutter event emitter", () => {
   const runtime = createTggRuntime({
     appVersion: "3.2.0",
     platform: "ios",
-    permissions: ["system:read"],
   });
 
   expect(testGlobal.tgg).toBe(runtime);
@@ -681,11 +706,11 @@ test("window.__tgg_emit skips CustomEvent dispatch when unavailable", () => {
   }).not.toThrow();
 });
 
-test("canIUse respects permission requirements", () => {
-  const runtime = createTggRuntime({ permissions: ["system:read"] });
+test("canIUse reflects capability support without auth state checks", () => {
+  const runtime = createTggRuntime();
 
   expect(runtime.canIUse("getSystemInfo")).toBe(true);
-  expect(runtime.canIUse("getUserInfo")).toBe(false);
+  expect(runtime.canIUse("getCommunityInfo")).toBe(true);
   expect(runtime.canIUse("setHeaderColor")).toBe(true);
   expect(runtime.canIUse("unknown")).toBe(false);
 });
@@ -735,18 +760,16 @@ test("invoke rejects locally when capability requires a newer app version", asyn
   expect(calls).toEqual([]);
 });
 
-test("protected methods reject locally when permission is missing", async () => {
-  const calls: unknown[] = [];
+test("runtime getCommunityInfo calls native directly", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
   testGlobal.flutter_inappwebview = {
-    async callHandler(_handlerName: string, payload: unknown) {
-      calls.push(payload);
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
       return {
         success: true,
         data: {
-          userId: "user-123",
-          avatar: "https://example.com/avatar.png",
-          username: "alice",
-          nickname: "Alice",
+          communityId: "community-123",
+          name: "Test Community",
         },
       };
     },
@@ -754,10 +777,11 @@ test("protected methods reject locally when permission is missing", async () => 
 
   const runtime = createTggRuntime();
 
-  await expect(runtime.getUserInfo()).rejects.toMatchObject({
-    code: "PERMISSION_DENIED",
+  await expect(runtime.getCommunityInfo()).resolves.toEqual({
+    communityId: "community-123",
+    name: "Test Community",
   });
-  expect(calls).toEqual([]);
+  expect(calls.map((call) => call.payload.method)).toEqual(["getCommunityInfo"]);
 });
 
 test("BackButton show and hide skip duplicate native calls", async () => {

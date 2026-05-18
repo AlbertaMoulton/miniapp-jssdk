@@ -36,7 +36,6 @@ export type {
   MiniAppInvokeResponse,
   MiniAppMethod,
   MiniAppNativeError,
-  MiniAppPermission,
   MiniAppSDK,
   MiniAppSDKError,
   MiniAppSDKOptions,

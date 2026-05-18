@@ -33,7 +33,6 @@ const DOWNLOAD_FILE_NAME_ERROR_MESSAGE = "downloadFile:fail invalid fileName";
 const DOWNLOAD_URL_ERROR_MESSAGE = "downloadFile:fail invalid url";
 const BACK_BUTTON_HANDLER_ERROR_MESSAGE = "[Teamgaga] BackButton.onClick handler failed";
 const INVALID_HEADER_COLOR_CODE = "INVALID_HEADER_COLOR";
-const PERMISSION_DENIED_CODE = "PERMISSION_DENIED";
 const UNSUPPORTED_CAPABILITY_CODE = "UNSUPPORTED_CAPABILITY";
 
 export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
@@ -43,12 +42,12 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "setHeaderColor" },
   { name: "BackButton.show" },
   { name: "BackButton.hide" },
-  { name: "getOauthCode", permission: "user:read" },
-  { name: "getUserId", permission: "user:read" },
-  { name: "getUserInfo", permission: "user:read" },
-  { name: "getSystemInfo", permission: "system:read" },
-  { name: "getCommunityId", permission: "community:read" },
-  { name: "getCommunityInfo", permission: "community:read" },
+  { name: "getOauthCode" },
+  { name: "getUserId" },
+  { name: "getUserInfo" },
+  { name: "getSystemInfo" },
+  { name: "getCommunityId" },
+  { name: "getCommunityInfo" },
   { name: "downloadFile" },
   { name: "abortDownloadFile" },
   { name: "saveImageToAlbum" },
@@ -89,7 +88,6 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     handlerName: options.handlerName,
     sdkVersion: options.sdkVersion,
   });
-  const permissions = new Set(options.permissions ?? []);
   let appVersion = options.appVersion ?? "";
   const capabilities = new Map<string, CapabilityConfig>(
     [...DEFAULT_CAPABILITIES, ...(options.capabilities ?? [])].map((capability) => [
@@ -115,30 +113,13 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
       return false;
     }
 
-    if (capability.permission && !permissions.has(capability.permission)) {
-      return false;
-    }
-
     return true;
-  };
-
-  const getCapabilityFailureCode = (method: MiniAppMethod): string => {
-    const capability = capabilities.get(method);
-
-    if (capability?.permission && !permissions.has(capability.permission)) {
-      return PERMISSION_DENIED_CODE;
-    }
-
-    return UNSUPPORTED_CAPABILITY_CODE;
   };
 
   const invoke = <T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T> => {
     if (!canIUse(method)) {
       return Promise.reject(
-        createMiniAppError(
-          `Permission denied or unsupported capability: ${method}`,
-          getCapabilityFailureCode(method),
-        ),
+        createMiniAppError(`Unsupported capability: ${method}`, UNSUPPORTED_CAPABILITY_CODE),
       );
     }
 

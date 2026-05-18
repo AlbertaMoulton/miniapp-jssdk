@@ -38,8 +38,6 @@ export type TggEventName =
 
 export type TggEventPayload = unknown;
 
-export type MiniAppPermission = "user:read" | "system:read" | "community:read";
-
 export type MiniAppInvokeRequest = {
   id: string;
   method: MiniAppMethod;
@@ -83,7 +81,6 @@ export type BridgeTransport = {
 
 export type CapabilityConfig = {
   name: TggCapability;
-  permission?: MiniAppPermission;
   minAppVersion?: string;
   enabled?: boolean;
 };
@@ -91,7 +88,6 @@ export type CapabilityConfig = {
 export type MiniAppSDKOptions = {
   appVersion?: string;
   handlerName?: string;
-  permissions?: readonly MiniAppPermission[];
   sdkVersion?: string;
   capabilities?: readonly CapabilityConfig[];
 };

@@ -149,33 +149,27 @@ The runtime should maintain a capability registry with:
 - the runtime knows the capability
 - the current app version satisfies the minimum version if one exists
 - the capability is enabled
-- permission requirements are satisfied or not required
 
 The initial app version should come from `createTggRuntime(options)` so Flutter
 can inject host metadata when installing `core.js`.
 
-## Permission Whitelist
+## Historical Note: Permission Whitelist
 
-The runtime should support a permission whitelist supplied at install time:
+This section describes an earlier design direction that was later removed from
+the SDK. The current implementation no longer exposes a public runtime
+permission whitelist and instead treats documented APIs as directly callable
+unless the host integration chooses to constrain them.
+
+The earlier draft proposed a permission whitelist supplied at install time:
 
 ```ts
+// Historical-only example; no longer part of the public runtime API.
 createTggRuntime({
-  permissions: ["user:read", "system:read"],
+  // permissions: [...]
 });
 ```
 
-Before invoking a protected native method, the runtime should reject locally with
-a `MiniAppSDKError` if the permission is missing. This gives miniapp developers
-a deterministic error without relying on Flutter to reject every unauthorized
-call.
-
-Initial permission mapping:
-
-- `getUserId`, `getUserInfo`, `getOauthCode`: `user:read`
-- `getSystemInfo`: `system:read`
-- `getCommunityId`, `getCommunityInfo`: `community:read`
-- navigation and lifecycle methods such as `ready`, `close`,
-  `setHeaderColor`, and `BackButton.show/hide`: no permission by default
+This permission model is obsolete and kept here only as historical context.
 
 ## File-Level Design
 
@@ -191,14 +185,13 @@ Initial permission mapping:
 `src/types.ts`
 
 - Remove the legacy `MiniAppBridge` shape.
-- Add request, response, transport, capability, permission, and runtime option
-  types.
+- Add request, response, transport, capability, and runtime option types.
 - Add `invoke` to the public `TggWebApp` type.
 
 `src/core-runtime.ts`
 
 - Create the runtime, mount `window.tgg`, and install `window.__tgg_emit`.
-- Own capability and permission checks before transport calls.
+- Own capability checks before transport calls.
 - Keep SDK-facing methods thin: each method delegates to `invoke`.
 
 `src/sdk.ts`
@@ -231,9 +224,7 @@ Tests should cover:
 - native error response normalization.
 - missing Flutter bridge rejection.
 - `BackButton.onClick` fires through `window.__tgg_emit("backButtonClicked")`.
-- `canIUse` respects known capabilities, app version, enabled flags, and
-  permissions.
-- protected methods reject when permission is missing.
+- `canIUse` respects known capabilities, app version, and enabled flags.
 - package exports still publish SDK and core bundles.
 
 ## Migration Effect
