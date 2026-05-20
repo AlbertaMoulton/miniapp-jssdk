@@ -26,6 +26,11 @@ function output(command, args) {
   }).trim();
 }
 
+function restoreVersionFiles(packagePath, packageSource, constantsPath, constantsSource) {
+  writeFileSync(packagePath, packageSource);
+  writeFileSync(constantsPath, constantsSource);
+}
+
 function bumpVersion(version, type) {
   const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
   if (!match) {
@@ -63,27 +68,37 @@ if (branch !== "main") {
 }
 
 const packagePath = resolve(rootDir, "package.json");
-const packageJson = JSON.parse(readFileSync(packagePath, "utf8"));
+const constantsPath = resolve(rootDir, "src/constants.ts");
+const originalPackageSource = readFileSync(packagePath, "utf8");
+const originalConstantsSource = readFileSync(constantsPath, "utf8");
+const packageJson = JSON.parse(originalPackageSource);
 const nextVersion = bumpVersion(packageJson.version, releaseType);
 const tagName = `v${nextVersion}`;
 
-try {
-  output("git", ["rev-parse", "--verify", tagName]);
+if (output("git", ["tag", "-l", tagName])) {
   console.error(`Release aborted: tag "${tagName}" already exists.`);
   process.exit(1);
-} catch {
-  // The tag does not exist, so the release can continue.
 }
 
-packageJson.version = nextVersion;
-writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
-run("pnpm", ["run", "sync:version"]);
+let releaseCommitCreated = false;
 
-run("pnpm", ["run", "ready"]);
-run("pnpm", ["pack", "--dry-run"]);
+try {
+  packageJson.version = nextVersion;
+  writeFileSync(packagePath, `${JSON.stringify(packageJson, null, 2)}\n`);
+  run("pnpm", ["run", "sync:version"]);
 
-run("git", ["add", "package.json", "src/constants.ts"]);
-run("git", ["commit", "-m", `release: ${tagName}`]);
-run("git", ["tag", tagName]);
+  run("pnpm", ["run", "ready"]);
+  run("pnpm", ["pack", "--dry-run"]);
+
+  run("git", ["add", "package.json", "src/constants.ts"]);
+  run("git", ["commit", "-m", `release: ${tagName}`]);
+  releaseCommitCreated = true;
+  run("git", ["tag", tagName]);
+} catch (error) {
+  if (!releaseCommitCreated) {
+    restoreVersionFiles(packagePath, originalPackageSource, constantsPath, originalConstantsSource);
+  }
+  throw error;
+}
 
 console.log(`Release ${tagName} is ready. Push it with: git push origin main ${tagName}`);

@@ -29,6 +29,9 @@ type TestStyle = {
 type TestDocumentElement = {
   style: TestStyle;
 };
+type TestDocument = {
+  documentElement: TestDocumentElement;
+};
 
 const testGlobal = globalThis as TestGlobal;
 const REQUEST_ID_PATTERN = /^tgg_req_[a-z0-9]+_\d+$/;
@@ -40,12 +43,12 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
-  delete testGlobal.tgg;
-  delete testGlobal.__tgg_emit;
-  delete testGlobal.__tgg_resolve;
-  delete testGlobal.flutter_inappwebview;
-  delete testGlobal.nativeBridge;
-  delete testGlobal.document;
+  Reflect.deleteProperty(testGlobal, "tgg");
+  Reflect.deleteProperty(testGlobal, "__tgg_emit");
+  Reflect.deleteProperty(testGlobal, "__tgg_resolve");
+  Reflect.deleteProperty(testGlobal, "flutter_inappwebview");
+  Reflect.deleteProperty(testGlobal, "nativeBridge");
+  Reflect.deleteProperty(testGlobal, "document");
 });
 
 const createDocumentStyleRecorder = () => {
@@ -729,9 +732,7 @@ test("runtime exposes Telegram-style environment properties after init", async (
 
 test("runtime syncs Telegram-style CSS variables with --tgg prefix", async () => {
   const { properties, documentElement } = createDocumentStyleRecorder();
-  testGlobal.document = {
-    documentElement,
-  };
+  testGlobal.document = { documentElement } as unknown as TestDocument & Document;
   testGlobal.flutter_inappwebview = {
     async callHandler() {
       return { success: true };
@@ -785,9 +786,7 @@ test("runtime syncs Telegram-style CSS variables with --tgg prefix", async () =>
 
 test("runtime updates environment properties and css variables from host events", () => {
   const { properties, documentElement } = createDocumentStyleRecorder();
-  testGlobal.document = {
-    documentElement,
-  };
+  testGlobal.document = { documentElement } as unknown as TestDocument & Document;
   testGlobal.flutter_inappwebview = {
     async callHandler() {
       return { success: true };

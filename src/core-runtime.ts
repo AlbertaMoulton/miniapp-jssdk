@@ -238,7 +238,9 @@ const normalizeThemeParams = (value: unknown): ThemeParams => {
   }
 
   return Object.fromEntries(
-    Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+    Object.entries(value).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
   );
 };
 
@@ -276,11 +278,7 @@ const syncCssVariables = (runtimeMetadata: RuntimeMetadata): void => {
   root.setProperty("--tgg-is-fullscreen", runtimeMetadata.isFullscreen ? "1" : "0");
 
   setInsetCssVariables(root, "--tgg-safe-area-inset", runtimeMetadata.safeAreaInset);
-  setInsetCssVariables(
-    root,
-    "--tgg-content-safe-area-inset",
-    runtimeMetadata.contentSafeAreaInset,
-  );
+  setInsetCssVariables(root, "--tgg-content-safe-area-inset", runtimeMetadata.contentSafeAreaInset);
 
   Object.entries(runtimeMetadata.themeParams).forEach(([key, value]) => {
     root.setProperty(`--tgg-theme-${toKebabCase(key)}`, value);

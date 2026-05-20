@@ -283,6 +283,6 @@ declare global {
     nativeBridge?: WebViewFlutterJavaScriptChannel;
     tgg?: TggWebApp;
     __tgg_emit?: (eventName: string, payload?: unknown) => void;
-    __tgg_resolve?: (id: string, envelope: MiniAppInvokeResponse | unknown) => void;
+    __tgg_resolve?: (id: string, envelope: unknown) => void;
   }
 }

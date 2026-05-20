@@ -169,21 +169,21 @@ tgg.init(): Promise<InitData>
 
 `InitData` 字段：
 
-| 字段            | 类型                                   | 说明                                     |
-| --------------- | -------------------------------------- | ---------------------------------------- |
-| `appVersion`    | `string`                               | TeamGaga App 版本。                      |
-| `sdkVersion`    | `string`                               | Native / 容器侧 SDK 版本。               |
-| `colorScheme`   | `"light" \| "dark"`                    | 当前颜色模式。                           |
-| `platform`      | `string`                               | 平台标识，例如 `"ios"`。                 |
-| `themeParams`   | `ThemeParams \| undefined`             | 当前主题参数，命名与 Telegram Mini Apps 对齐。 |
-| `viewportHeight` | `number \| undefined`                 | 当前可用 viewport 高度。                 |
-| `viewportStableHeight` | `number \| undefined`           | 稳定 viewport 高度。                     |
-| `headerColor`   | `string \| undefined`                  | 当前头部颜色。                           |
-| `backgroundColor` | `string \| undefined`                | 当前背景色。                             |
-| `isFullscreen`  | `boolean \| undefined`                 | 当前是否处于 fullscreen。                |
-| `safeAreaInset` | `SafeAreaInset \| undefined`           | 宿主安全区。                             |
-| `contentSafeAreaInset` | `SafeAreaInset \| undefined`    | 内容安全区。                             |
-| `launchContext` | `Record<string, unknown> \| undefined` | 启动上下文，可放来源、场景、业务参数等。 |
+| 字段                   | 类型                                   | 说明                                           |
+| ---------------------- | -------------------------------------- | ---------------------------------------------- |
+| `appVersion`           | `string`                               | TeamGaga App 版本。                            |
+| `sdkVersion`           | `string`                               | Native / 容器侧 SDK 版本。                     |
+| `colorScheme`          | `"light" \| "dark"`                    | 当前颜色模式。                                 |
+| `platform`             | `string`                               | 平台标识，例如 `"ios"`。                       |
+| `themeParams`          | `ThemeParams \| undefined`             | 当前主题参数，命名与 Telegram Mini Apps 对齐。 |
+| `viewportHeight`       | `number \| undefined`                  | 当前可用 viewport 高度。                       |
+| `viewportStableHeight` | `number \| undefined`                  | 稳定 viewport 高度。                           |
+| `headerColor`          | `string \| undefined`                  | 当前头部颜色。                                 |
+| `backgroundColor`      | `string \| undefined`                  | 当前背景色。                                   |
+| `isFullscreen`         | `boolean \| undefined`                 | 当前是否处于 fullscreen。                      |
+| `safeAreaInset`        | `SafeAreaInset \| undefined`           | 宿主安全区。                                   |
+| `contentSafeAreaInset` | `SafeAreaInset \| undefined`           | 内容安全区。                                   |
+| `launchContext`        | `Record<string, unknown> \| undefined` | 启动上下文，可放来源、场景、业务参数等。       |
 
 示例：
 
@@ -894,33 +894,33 @@ tgg.canIUse(capability: string): boolean
 
 当前可检测能力：
 
-| 能力名                    | 说明                       |
-| ------------------------- | -------------------------- |
-| `"init"`                  | SDK / Native bridge 握手。 |
-| `"ready"`                 | 页面 ready 通知。          |
-| `"close"`                 | 关闭当前 Mini App。        |
-| `"setHeaderColor"`        | 设置原生导航栏颜色。       |
-| `"BackButton.show"`       | 展示原生返回按钮。         |
-| `"BackButton.hide"`       | 隐藏原生返回按钮。         |
-| `"getOauthCode"`          | 获取 OAuth code。          |
-| `"getUserId"`             | 获取用户 ID。              |
-| `"getUserInfo"`           | 获取用户基础信息。         |
-| `"getSystemInfo"`         | 获取系统信息。             |
-| `"getCommunityId"`        | 获取社群 ID。              |
-| `"getCommunityInfo"`      | 获取社群基础信息。         |
-| `"downloadFile"`          | 下载远程文件。             |
-| `"abortDownloadFile"`     | 取消下载任务。             |
-| `"saveImageToAlbum"`      | 保存图片到系统相册。       |
-| `"themeChanged"`          | 主题变化事件能力。         |
-| `"backButtonClicked"`     | 原生返回按钮点击事件能力。 |
-| `"viewportChanged"`       | viewport 变化事件能力。    |
-| `"safeAreaChanged"`       | 安全区变化事件能力。       |
-| `"contentSafeAreaChanged"` | 内容安全区变化事件能力。  |
-| `"fullscreenChanged"`     | fullscreen 状态变化事件能力。 |
-| `"downloadFileProgress"`  | 下载进度事件能力。         |
-| `"downloadFileSuccess"`   | 下载成功事件能力。         |
-| `"downloadFileFail"`      | 下载失败事件能力。         |
-| `"clipboardTextReceived"` | 剪贴板文本返回事件能力。   |
+| 能力名                     | 说明                          |
+| -------------------------- | ----------------------------- |
+| `"init"`                   | SDK / Native bridge 握手。    |
+| `"ready"`                  | 页面 ready 通知。             |
+| `"close"`                  | 关闭当前 Mini App。           |
+| `"setHeaderColor"`         | 设置原生导航栏颜色。          |
+| `"BackButton.show"`        | 展示原生返回按钮。            |
+| `"BackButton.hide"`        | 隐藏原生返回按钮。            |
+| `"getOauthCode"`           | 获取 OAuth code。             |
+| `"getUserId"`              | 获取用户 ID。                 |
+| `"getUserInfo"`            | 获取用户基础信息。            |
+| `"getSystemInfo"`          | 获取系统信息。                |
+| `"getCommunityId"`         | 获取社群 ID。                 |
+| `"getCommunityInfo"`       | 获取社群基础信息。            |
+| `"downloadFile"`           | 下载远程文件。                |
+| `"abortDownloadFile"`      | 取消下载任务。                |
+| `"saveImageToAlbum"`       | 保存图片到系统相册。          |
+| `"themeChanged"`           | 主题变化事件能力。            |
+| `"backButtonClicked"`      | 原生返回按钮点击事件能力。    |
+| `"viewportChanged"`        | viewport 变化事件能力。       |
+| `"safeAreaChanged"`        | 安全区变化事件能力。          |
+| `"contentSafeAreaChanged"` | 内容安全区变化事件能力。      |
+| `"fullscreenChanged"`      | fullscreen 状态变化事件能力。 |
+| `"downloadFileProgress"`   | 下载进度事件能力。            |
+| `"downloadFileSuccess"`    | 下载成功事件能力。            |
+| `"downloadFileFail"`       | 下载失败事件能力。            |
+| `"clipboardTextReceived"`  | 剪贴板文本返回事件能力。      |
 
 示例：
 
@@ -1355,23 +1355,23 @@ createTggRuntime(options?: TggRuntimeOptions): TggWebApp
 
 `TggRuntimeOptions` 字段：
 
-| 字段           | 类型                                       | 说明                                                                |
-| -------------- | ------------------------------------------ | ------------------------------------------------------------------- |
-| `appVersion`   | `string \| undefined`                      | TeamGaga App 版本。默认空字符串。                                   |
-| `handlerName`  | `string \| undefined`                      | Flutter InAppWebView JavaScript handler 名。默认 `"nativeBridge"`。 |
-| `platform`     | `string \| undefined`                      | 平台标识。默认 `"web"`。                                            |
-| `sdkVersion`   | `string \| undefined`                      | SDK 版本。默认使用包内版本。                                        |
-| `version`      | `string \| undefined`                      | core runtime 版本。默认使用包内版本。                               |
-| `colorScheme`  | `"light" \| "dark" \| undefined`           | 初始颜色模式。                                                      |
-| `themeParams`  | `ThemeParams \| undefined`                 | 初始主题参数。                                                      |
-| `viewportHeight` | `number \| undefined`                    | 初始 viewport 高度。                                                |
-| `viewportStableHeight` | `number \| undefined`              | 初始稳定 viewport 高度。                                            |
-| `headerColor`  | `string \| undefined`                      | 初始头部颜色。                                                      |
-| `backgroundColor` | `string \| undefined`                   | 初始背景色。                                                        |
-| `isFullscreen` | `boolean \| undefined`                     | 初始 fullscreen 状态。                                              |
-| `safeAreaInset` | `SafeAreaInset \| undefined`              | 初始安全区。                                                        |
-| `contentSafeAreaInset` | `SafeAreaInset \| undefined`       | 初始内容安全区。                                                    |
-| `capabilities` | `readonly CapabilityConfig[] \| undefined` | 能力覆盖配置，可用于禁用或扩展能力。                                |
+| 字段                   | 类型                                       | 说明                                                                |
+| ---------------------- | ------------------------------------------ | ------------------------------------------------------------------- |
+| `appVersion`           | `string \| undefined`                      | TeamGaga App 版本。默认空字符串。                                   |
+| `handlerName`          | `string \| undefined`                      | Flutter InAppWebView JavaScript handler 名。默认 `"nativeBridge"`。 |
+| `platform`             | `string \| undefined`                      | 平台标识。默认 `"web"`。                                            |
+| `sdkVersion`           | `string \| undefined`                      | SDK 版本。默认使用包内版本。                                        |
+| `version`              | `string \| undefined`                      | core runtime 版本。默认使用包内版本。                               |
+| `colorScheme`          | `"light" \| "dark" \| undefined`           | 初始颜色模式。                                                      |
+| `themeParams`          | `ThemeParams \| undefined`                 | 初始主题参数。                                                      |
+| `viewportHeight`       | `number \| undefined`                      | 初始 viewport 高度。                                                |
+| `viewportStableHeight` | `number \| undefined`                      | 初始稳定 viewport 高度。                                            |
+| `headerColor`          | `string \| undefined`                      | 初始头部颜色。                                                      |
+| `backgroundColor`      | `string \| undefined`                      | 初始背景色。                                                        |
+| `isFullscreen`         | `boolean \| undefined`                     | 初始 fullscreen 状态。                                              |
+| `safeAreaInset`        | `SafeAreaInset \| undefined`               | 初始安全区。                                                        |
+| `contentSafeAreaInset` | `SafeAreaInset \| undefined`               | 初始内容安全区。                                                    |
+| `capabilities`         | `readonly CapabilityConfig[] \| undefined` | 能力覆盖配置，可用于禁用或扩展能力。                                |
 
 返回值：`TggWebApp`，并会挂载到 `window.tgg`。
 
