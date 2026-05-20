@@ -23,6 +23,12 @@ type TestFlutterBridge = {
 type TestJavaScriptChannel = {
   postMessage(message: string): void;
 };
+type TestStyle = {
+  setProperty(name: string, value: string): void;
+};
+type TestDocumentElement = {
+  style: TestStyle;
+};
 
 const testGlobal = globalThis as TestGlobal;
 const REQUEST_ID_PATTERN = /^tgg_req_[a-z0-9]+_\d+$/;
@@ -39,7 +45,24 @@ afterEach(() => {
   delete testGlobal.__tgg_resolve;
   delete testGlobal.flutter_inappwebview;
   delete testGlobal.nativeBridge;
+  delete testGlobal.document;
 });
+
+const createDocumentStyleRecorder = () => {
+  const properties = new Map<string, string>();
+  const style: TestStyle = {
+    setProperty(name: string, value: string) {
+      properties.set(name, value);
+    },
+  };
+
+  return {
+    properties,
+    documentElement: {
+      style,
+    } satisfies TestDocumentElement,
+  };
+};
 
 test("calls Flutter InAppWebView nativeBridge with invoke payload", async () => {
   const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
@@ -631,6 +654,216 @@ test("runtime init updates startup metadata before ready is called", async () =>
   expect(runtime.platform).toBe("android");
   expect(runtime.isVersionAtLeast("3.3.0")).toBe(true);
   expect(calls.map((call) => call.payload.method)).toEqual(["init", "ready"]);
+});
+
+test("runtime exposes Telegram-style environment properties after init", async () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler(_handlerName: string, payload: unknown) {
+      if ((payload as Record<string, unknown>).method === "init") {
+        return {
+          success: true,
+          data: {
+            appVersion: "3.4.0",
+            sdkVersion: "0.2.0",
+            colorScheme: "dark",
+            platform: "android",
+            themeParams: {
+              bg_color: "#101010",
+              secondary_bg_color: "#202020",
+              text_color: "#ffffff",
+            },
+            viewportHeight: 712,
+            viewportStableHeight: 680,
+            headerColor: "#123456",
+            backgroundColor: "#654321",
+            isFullscreen: true,
+            safeAreaInset: {
+              top: 44,
+              right: 0,
+              bottom: 34,
+              left: 0,
+            },
+            contentSafeAreaInset: {
+              top: 0,
+              right: 0,
+              bottom: 16,
+              left: 0,
+            },
+          },
+        };
+      }
+
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  await runtime.init();
+
+  expect(runtime.version).toBe(SDK_VERSION);
+  expect(runtime.platform).toBe("android");
+  expect(runtime.colorScheme).toBe("dark");
+  expect(runtime.themeParams).toEqual({
+    bg_color: "#101010",
+    secondary_bg_color: "#202020",
+    text_color: "#ffffff",
+  });
+  expect(runtime.viewportHeight).toBe(712);
+  expect(runtime.viewportStableHeight).toBe(680);
+  expect(runtime.headerColor).toBe("#123456");
+  expect(runtime.backgroundColor).toBe("#654321");
+  expect(runtime.isFullscreen).toBe(true);
+  expect(runtime.safeAreaInset).toEqual({
+    top: 44,
+    right: 0,
+    bottom: 34,
+    left: 0,
+  });
+  expect(runtime.contentSafeAreaInset).toEqual({
+    top: 0,
+    right: 0,
+    bottom: 16,
+    left: 0,
+  });
+});
+
+test("runtime syncs Telegram-style CSS variables with --tgg prefix", async () => {
+  const { properties, documentElement } = createDocumentStyleRecorder();
+  testGlobal.document = {
+    documentElement,
+  };
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  createTggRuntime({
+    colorScheme: "dark",
+    themeParams: {
+      bg_color: "#101010",
+      secondary_bg_color: "#202020",
+      text_color: "#ffffff",
+    },
+    viewportHeight: 720,
+    viewportStableHeight: 688,
+    headerColor: "#123456",
+    backgroundColor: "#654321",
+    isFullscreen: true,
+    safeAreaInset: {
+      top: 44,
+      right: 1,
+      bottom: 34,
+      left: 2,
+    },
+    contentSafeAreaInset: {
+      top: 3,
+      right: 4,
+      bottom: 16,
+      left: 5,
+    },
+  });
+
+  expect(properties.get("--tgg-color-scheme")).toBe("dark");
+  expect(properties.get("--tgg-theme-bg-color")).toBe("#101010");
+  expect(properties.get("--tgg-theme-secondary-bg-color")).toBe("#202020");
+  expect(properties.get("--tgg-theme-text-color")).toBe("#ffffff");
+  expect(properties.get("--tgg-viewport-height")).toBe("720px");
+  expect(properties.get("--tgg-viewport-stable-height")).toBe("688px");
+  expect(properties.get("--tgg-header-color")).toBe("#123456");
+  expect(properties.get("--tgg-background-color")).toBe("#654321");
+  expect(properties.get("--tgg-is-fullscreen")).toBe("1");
+  expect(properties.get("--tgg-safe-area-inset-top")).toBe("44px");
+  expect(properties.get("--tgg-safe-area-inset-right")).toBe("1px");
+  expect(properties.get("--tgg-safe-area-inset-bottom")).toBe("34px");
+  expect(properties.get("--tgg-safe-area-inset-left")).toBe("2px");
+  expect(properties.get("--tgg-content-safe-area-inset-top")).toBe("3px");
+  expect(properties.get("--tgg-content-safe-area-inset-right")).toBe("4px");
+  expect(properties.get("--tgg-content-safe-area-inset-bottom")).toBe("16px");
+  expect(properties.get("--tgg-content-safe-area-inset-left")).toBe("5px");
+});
+
+test("runtime updates environment properties and css variables from host events", () => {
+  const { properties, documentElement } = createDocumentStyleRecorder();
+  testGlobal.document = {
+    documentElement,
+  };
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime({
+    colorScheme: "light",
+    viewportHeight: 500,
+    viewportStableHeight: 480,
+    isFullscreen: false,
+  });
+
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("themeChanged", {
+    colorScheme: "dark",
+    themeParams: {
+      bg_color: "#111111",
+      text_color: "#eeeeee",
+    },
+    headerColor: "#222222",
+    backgroundColor: "#333333",
+  });
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("viewportChanged", {
+    height: 640,
+    stableHeight: 620,
+  });
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("safeAreaChanged", {
+    top: 10,
+    right: 11,
+    bottom: 12,
+    left: 13,
+  });
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)(
+    "contentSafeAreaChanged",
+    {
+      top: 14,
+      right: 15,
+      bottom: 16,
+      left: 17,
+    },
+  );
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("fullscreenChanged", {
+    isFullscreen: true,
+  });
+
+  expect(runtime.colorScheme).toBe("dark");
+  expect(runtime.themeParams).toEqual({
+    bg_color: "#111111",
+    text_color: "#eeeeee",
+  });
+  expect(runtime.viewportHeight).toBe(640);
+  expect(runtime.viewportStableHeight).toBe(620);
+  expect(runtime.headerColor).toBe("#222222");
+  expect(runtime.backgroundColor).toBe("#333333");
+  expect(runtime.isFullscreen).toBe(true);
+  expect(runtime.safeAreaInset).toEqual({
+    top: 10,
+    right: 11,
+    bottom: 12,
+    left: 13,
+  });
+  expect(runtime.contentSafeAreaInset).toEqual({
+    top: 14,
+    right: 15,
+    bottom: 16,
+    left: 17,
+  });
+  expect(properties.get("--tgg-color-scheme")).toBe("dark");
+  expect(properties.get("--tgg-theme-bg-color")).toBe("#111111");
+  expect(properties.get("--tgg-header-color")).toBe("#222222");
+  expect(properties.get("--tgg-background-color")).toBe("#333333");
+  expect(properties.get("--tgg-viewport-height")).toBe("640px");
+  expect(properties.get("--tgg-viewport-stable-height")).toBe("620px");
+  expect(properties.get("--tgg-is-fullscreen")).toBe("1");
+  expect(properties.get("--tgg-safe-area-inset-left")).toBe("13px");
+  expect(properties.get("--tgg-content-safe-area-inset-bottom")).toBe("16px");
 });
 
 test("BackButton onClick fires through window.__tgg_emit", () => {

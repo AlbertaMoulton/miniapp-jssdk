@@ -4,9 +4,11 @@ import { createMiniAppSDK, NATIVE_METHOD_CAPABILITIES } from "./sdk";
 import type {
   InitData,
   MiniAppMethod,
+  SafeAreaInset,
   TggColorScheme,
   TggEventName,
   TggRuntimeOptions,
+  ThemeParams,
   TggWebApp,
 } from "./types";
 
@@ -18,20 +20,36 @@ export const createTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp => 
     platform: options.platform ?? "web",
     sdkVersion: options.sdkVersion ?? SDK_VERSION,
     version: options.version ?? SDK_VERSION,
+    themeParams: normalizeThemeParams(options.themeParams),
+    viewportHeight: normalizeDimension(options.viewportHeight),
+    viewportStableHeight: normalizeDimension(options.viewportStableHeight),
+    headerColor: options.headerColor ?? "",
+    backgroundColor: options.backgroundColor ?? "",
+    isFullscreen: options.isFullscreen ?? false,
+    safeAreaInset: normalizeSafeAreaInset(options.safeAreaInset),
+    contentSafeAreaInset: normalizeSafeAreaInset(options.contentSafeAreaInset),
   } satisfies {
     appVersion: string;
     colorScheme: TggColorScheme;
     platform: string;
     sdkVersion: string;
     version: string;
+    themeParams: ThemeParams;
+    viewportHeight: number;
+    viewportStableHeight: number;
+    headerColor: string;
+    backgroundColor: string;
+    isFullscreen: boolean;
+    safeAreaInset: SafeAreaInset;
+    contentSafeAreaInset: SafeAreaInset;
   };
+
+  syncCssVariables(runtimeMetadata);
 
   const init = async (): Promise<InitData> => {
     const initData = await sdk.init();
-    runtimeMetadata.appVersion = initData.appVersion;
-    runtimeMetadata.colorScheme = initData.colorScheme;
-    runtimeMetadata.platform = initData.platform;
-    runtimeMetadata.sdkVersion = initData.sdkVersion;
+    applyInitData(runtimeMetadata, initData);
+    syncCssVariables(runtimeMetadata);
     return initData;
   };
 
@@ -53,11 +71,37 @@ export const createTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp => 
     get version() {
       return runtimeMetadata.version;
     },
+    get themeParams() {
+      return runtimeMetadata.themeParams;
+    },
+    get viewportHeight() {
+      return runtimeMetadata.viewportHeight;
+    },
+    get viewportStableHeight() {
+      return runtimeMetadata.viewportStableHeight;
+    },
+    get headerColor() {
+      return runtimeMetadata.headerColor;
+    },
+    get backgroundColor() {
+      return runtimeMetadata.backgroundColor;
+    },
+    get isFullscreen() {
+      return runtimeMetadata.isFullscreen;
+    },
+    get safeAreaInset() {
+      return runtimeMetadata.safeAreaInset;
+    },
+    get contentSafeAreaInset() {
+      return runtimeMetadata.contentSafeAreaInset;
+    },
   };
 
   const global = getRuntimeGlobal();
   global[TGG_GLOBAL_NAME] = runtime;
   global[TGG_EVENT_GLOBAL_NAME] = (eventName: string, payload?: unknown) => {
+    applyRuntimeEvent(runtimeMetadata, eventName as TggEventName, payload);
+    syncCssVariables(runtimeMetadata);
     runtime.receiveEvent(eventName as TggEventName, payload);
     dispatchTggCustomEvent(eventName, payload);
   };
@@ -104,3 +148,181 @@ const dispatchTggCustomEvent = (eventName: string, payload?: unknown): void => {
     }),
   );
 };
+
+type RuntimeMetadata = {
+  appVersion: string;
+  colorScheme: TggColorScheme;
+  platform: string;
+  sdkVersion: string;
+  version: string;
+  themeParams: ThemeParams;
+  viewportHeight: number;
+  viewportStableHeight: number;
+  headerColor: string;
+  backgroundColor: string;
+  isFullscreen: boolean;
+  safeAreaInset: SafeAreaInset;
+  contentSafeAreaInset: SafeAreaInset;
+};
+
+const DEFAULT_SAFE_AREA_INSET: SafeAreaInset = {
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+};
+
+const applyInitData = (runtimeMetadata: RuntimeMetadata, initData: InitData): void => {
+  runtimeMetadata.appVersion = initData.appVersion;
+  runtimeMetadata.colorScheme = initData.colorScheme;
+  runtimeMetadata.platform = initData.platform;
+  runtimeMetadata.sdkVersion = initData.sdkVersion;
+  runtimeMetadata.themeParams = normalizeThemeParams(initData.themeParams);
+  runtimeMetadata.viewportHeight = normalizeDimension(initData.viewportHeight);
+  runtimeMetadata.viewportStableHeight = normalizeDimension(initData.viewportStableHeight);
+  runtimeMetadata.headerColor = initData.headerColor ?? "";
+  runtimeMetadata.backgroundColor = initData.backgroundColor ?? "";
+  runtimeMetadata.isFullscreen = initData.isFullscreen ?? false;
+  runtimeMetadata.safeAreaInset = normalizeSafeAreaInset(initData.safeAreaInset);
+  runtimeMetadata.contentSafeAreaInset = normalizeSafeAreaInset(initData.contentSafeAreaInset);
+};
+
+const applyRuntimeEvent = (
+  runtimeMetadata: RuntimeMetadata,
+  eventName: TggEventName,
+  payload?: unknown,
+): void => {
+  if (!isRecord(payload)) {
+    if (eventName === "fullscreenChanged") {
+      runtimeMetadata.isFullscreen = false;
+    }
+    return;
+  }
+
+  if (eventName === "themeChanged") {
+    const colorScheme = getColorScheme(payload.colorScheme);
+    if (colorScheme) {
+      runtimeMetadata.colorScheme = colorScheme;
+    }
+    runtimeMetadata.themeParams = normalizeThemeParams(payload.themeParams);
+    runtimeMetadata.headerColor = getString(payload.headerColor) ?? runtimeMetadata.headerColor;
+    runtimeMetadata.backgroundColor =
+      getString(payload.backgroundColor) ?? runtimeMetadata.backgroundColor;
+    return;
+  }
+
+  if (eventName === "viewportChanged") {
+    runtimeMetadata.viewportHeight = normalizeDimension(payload.height);
+    runtimeMetadata.viewportStableHeight = normalizeDimension(payload.stableHeight);
+    return;
+  }
+
+  if (eventName === "safeAreaChanged") {
+    runtimeMetadata.safeAreaInset = normalizeSafeAreaInset(payload);
+    return;
+  }
+
+  if (eventName === "contentSafeAreaChanged") {
+    runtimeMetadata.contentSafeAreaInset = normalizeSafeAreaInset(payload);
+    return;
+  }
+
+  if (eventName === "fullscreenChanged") {
+    runtimeMetadata.isFullscreen = Boolean(payload.isFullscreen);
+  }
+};
+
+const normalizeThemeParams = (value: unknown): ThemeParams => {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+  );
+};
+
+const normalizeDimension = (value: unknown): number => {
+  return typeof value === "number" && Number.isFinite(value) ? value : 0;
+};
+
+const normalizeSafeAreaInset = (value: unknown): SafeAreaInset => {
+  if (!isRecord(value)) {
+    return { ...DEFAULT_SAFE_AREA_INSET };
+  }
+
+  return {
+    top: normalizeDimension(value.top),
+    right: normalizeDimension(value.right),
+    bottom: normalizeDimension(value.bottom),
+    left: normalizeDimension(value.left),
+  };
+};
+
+const syncCssVariables = (runtimeMetadata: RuntimeMetadata): void => {
+  const root = getDocumentElementStyle();
+  if (!root) {
+    return;
+  }
+
+  root.setProperty("--tgg-color-scheme", runtimeMetadata.colorScheme);
+  root.setProperty("--tgg-viewport-height", toPixelValue(runtimeMetadata.viewportHeight));
+  root.setProperty(
+    "--tgg-viewport-stable-height",
+    toPixelValue(runtimeMetadata.viewportStableHeight),
+  );
+  root.setProperty("--tgg-header-color", runtimeMetadata.headerColor);
+  root.setProperty("--tgg-background-color", runtimeMetadata.backgroundColor);
+  root.setProperty("--tgg-is-fullscreen", runtimeMetadata.isFullscreen ? "1" : "0");
+
+  setInsetCssVariables(root, "--tgg-safe-area-inset", runtimeMetadata.safeAreaInset);
+  setInsetCssVariables(
+    root,
+    "--tgg-content-safe-area-inset",
+    runtimeMetadata.contentSafeAreaInset,
+  );
+
+  Object.entries(runtimeMetadata.themeParams).forEach(([key, value]) => {
+    root.setProperty(`--tgg-theme-${toKebabCase(key)}`, value);
+  });
+};
+
+const setInsetCssVariables = (
+  root: CSSStyleDeclarationLike,
+  prefix: string,
+  inset: SafeAreaInset,
+): void => {
+  root.setProperty(`${prefix}-top`, toPixelValue(inset.top));
+  root.setProperty(`${prefix}-right`, toPixelValue(inset.right));
+  root.setProperty(`${prefix}-bottom`, toPixelValue(inset.bottom));
+  root.setProperty(`${prefix}-left`, toPixelValue(inset.left));
+};
+
+type CSSStyleDeclarationLike = {
+  setProperty(name: string, value: string): void;
+};
+
+const getDocumentElementStyle = (): CSSStyleDeclarationLike | undefined => {
+  const global = getRuntimeGlobal() as {
+    document?: {
+      documentElement?: {
+        style?: CSSStyleDeclarationLike;
+      };
+    };
+  };
+
+  return global.document?.documentElement?.style;
+};
+
+const toPixelValue = (value: number): string => `${value}px`;
+
+const toKebabCase = (value: string): string => value.replaceAll("_", "-");
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const getString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const getColorScheme = (value: unknown): TggColorScheme | undefined =>
+  value === "light" || value === "dark" ? value : undefined;

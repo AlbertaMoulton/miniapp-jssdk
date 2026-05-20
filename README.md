@@ -39,6 +39,7 @@ import { tgg } from "@teamgaga/miniapp-jssdk";
 
 const initData = await tgg.init();
 console.log(initData.platform, initData.colorScheme);
+console.log(initData.viewportHeight, initData.safeAreaInset?.bottom);
 
 // Fetch data and render the miniapp UI.
 await tgg.setHeaderColor("bg_color");
@@ -111,6 +112,57 @@ await runtime.getUserInfo();
 
 `getTgg()` throws a clear error when the app is not running inside TeamGaga and
 `window.tgg` has not been injected.
+
+## Telegram-style environment fields
+
+The injected runtime now mirrors the Telegram Mini Apps style environment model.
+After `await tgg.init()`, both `initData` and `window.tgg` expose:
+
+- `version`
+- `platform`
+- `colorScheme`
+- `themeParams`
+- `viewportHeight`
+- `viewportStableHeight`
+- `headerColor`
+- `backgroundColor`
+- `isFullscreen`
+- `safeAreaInset`
+- `contentSafeAreaInset`
+
+Example:
+
+```ts
+await tgg.init();
+
+console.log(tgg.version, tgg.platform);
+console.log(tgg.themeParams.bg_color);
+console.log(tgg.viewportHeight, tgg.viewportStableHeight);
+console.log(tgg.safeAreaInset.bottom, tgg.contentSafeAreaInset.bottom);
+```
+
+The runtime also writes CSS custom properties to `document.documentElement.style`
+with a `--tgg-` prefix so H5 can consume host state without waiting on JS glue:
+
+- `--tgg-color-scheme`
+- `--tgg-theme-*`
+- `--tgg-viewport-height`
+- `--tgg-viewport-stable-height`
+- `--tgg-header-color`
+- `--tgg-background-color`
+- `--tgg-is-fullscreen`
+- `--tgg-safe-area-inset-*`
+- `--tgg-content-safe-area-inset-*`
+
+Example:
+
+```css
+.page {
+  min-height: var(--tgg-viewport-height);
+  padding-bottom: var(--tgg-content-safe-area-inset-bottom);
+  background: var(--tgg-theme-bg-color, var(--tgg-background-color));
+}
+```
 
 ## Flutter Host Integration
 
@@ -197,6 +249,51 @@ For generic runtime events, miniapps can use:
 ```ts
 tgg.onEvent("themeChanged", (payload) => {
   console.log(payload);
+});
+```
+
+The host may also emit these environment events when state changes:
+
+- `themeChanged`
+- `viewportChanged`
+- `safeAreaChanged`
+- `contentSafeAreaChanged`
+- `fullscreenChanged`
+
+Recommended payloads:
+
+```ts
+window.__tgg_emit("themeChanged", {
+  colorScheme: "dark",
+  themeParams: {
+    bg_color: "#101010",
+    secondary_bg_color: "#202020",
+  },
+  headerColor: "#123456",
+  backgroundColor: "#654321",
+});
+
+window.__tgg_emit("viewportChanged", {
+  height: 720,
+  stableHeight: 688,
+});
+
+window.__tgg_emit("safeAreaChanged", {
+  top: 44,
+  right: 0,
+  bottom: 34,
+  left: 0,
+});
+
+window.__tgg_emit("contentSafeAreaChanged", {
+  top: 0,
+  right: 0,
+  bottom: 16,
+  left: 0,
+});
+
+window.__tgg_emit("fullscreenChanged", {
+  isFullscreen: true,
 });
 ```
 

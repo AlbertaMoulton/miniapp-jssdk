@@ -590,6 +590,27 @@ class TeamGagaMiniAppDispatcher implements MiniAppNativeDispatcher {
           'sdkVersion': request.sdkVersion,
           'colorScheme': 'light',
           'platform': defaultTargetPlatform.name,
+          'themeParams': <String, dynamic>{
+            'bg_color': '#ffffff',
+            'secondary_bg_color': '#f5f5f5',
+          },
+          'viewportHeight': 720.0,
+          'viewportStableHeight': 688.0,
+          'headerColor': '#ffffff',
+          'backgroundColor': '#ffffff',
+          'isFullscreen': false,
+          'safeAreaInset': <String, dynamic>{
+            'top': 47.0,
+            'right': 0.0,
+            'bottom': 34.0,
+            'left': 0.0,
+          },
+          'contentSafeAreaInset': <String, dynamic>{
+            'top': 0.0,
+            'right': 0.0,
+            'bottom': 16.0,
+            'left': 0.0,
+          },
           'launchContext': <String, dynamic>{},
         };
       case 'ready':
@@ -635,11 +656,32 @@ class TeamGagaMiniAppDispatcher implements MiniAppNativeDispatcher {
             'height': 2532,
           },
           'platformBrightness': 'light',
+          'themeParams': <String, dynamic>{
+            'bg_color': '#ffffff',
+            'secondary_bg_color': '#f5f5f5',
+          },
+          'viewportHeight': 720.0,
+          'viewportStableHeight': 688.0,
+          'headerColor': '#ffffff',
+          'backgroundColor': '#ffffff',
+          'isFullscreen': false,
           'viewPadding': <String, dynamic>{
             'left': 0,
             'right': 0,
             'top': 47,
             'bottom': 34,
+          },
+          'safeAreaInset': <String, dynamic>{
+            'left': 0.0,
+            'right': 0.0,
+            'top': 47.0,
+            'bottom': 34.0,
+          },
+          'contentSafeAreaInset': <String, dynamic>{
+            'left': 0.0,
+            'right': 0.0,
+            'top': 0.0,
+            'bottom': 16.0,
           },
         };
       case 'getOauthCode':
@@ -671,3 +713,51 @@ class TeamGagaMiniAppDispatcher implements MiniAppNativeDispatcher {
   `{ success: false, error: { code, message } }`.
 - Do not expose sensitive native capabilities without server-side and native-side
   permission checks.
+
+## Runtime Environment Sync
+
+The current runtime tracks a Telegram-style environment model. Flutter should keep
+these fields current in both the `init` response and any later host events:
+
+- `colorScheme`
+- `themeParams`
+- `viewportHeight`
+- `viewportStableHeight`
+- `headerColor`
+- `backgroundColor`
+- `isFullscreen`
+- `safeAreaInset`
+- `contentSafeAreaInset`
+
+When any of them change after startup, emit host events through `window.__tgg_emit(...)`:
+
+```dart
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("themeChanged", {"colorScheme":"dark","themeParams":{"bg_color":"#101010"},"headerColor":"#123456","backgroundColor":"#654321"})',
+);
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("viewportChanged", {"height":720,"stableHeight":688})',
+);
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("safeAreaChanged", {"top":47,"right":0,"bottom":34,"left":0})',
+);
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("contentSafeAreaChanged", {"top":0,"right":0,"bottom":16,"left":0})',
+);
+controller.evaluateJavascript(
+  source: 'window.__tgg_emit("fullscreenChanged", {"isFullscreen":true})',
+);
+```
+
+The runtime will expose the same values on `window.tgg` and mirror them into CSS
+custom properties using the `--tgg-*` prefix:
+
+- `--tgg-color-scheme`
+- `--tgg-theme-*`
+- `--tgg-viewport-height`
+- `--tgg-viewport-stable-height`
+- `--tgg-header-color`
+- `--tgg-background-color`
+- `--tgg-is-fullscreen`
+- `--tgg-safe-area-inset-*`
+- `--tgg-content-safe-area-inset-*`

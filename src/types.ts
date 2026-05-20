@@ -23,6 +23,10 @@ export type TggCapability =
   | MiniAppMethod
   | "themeChanged"
   | "backButtonClicked"
+  | "viewportChanged"
+  | "safeAreaChanged"
+  | "contentSafeAreaChanged"
+  | "fullscreenChanged"
   | "downloadFileProgress"
   | "downloadFileSuccess"
   | "downloadFileFail"
@@ -31,6 +35,10 @@ export type TggCapability =
 export type TggEventName =
   | "backButtonClicked"
   | "themeChanged"
+  | "viewportChanged"
+  | "safeAreaChanged"
+  | "contentSafeAreaChanged"
+  | "fullscreenChanged"
   | "downloadFileProgress"
   | "downloadFileSuccess"
   | "downloadFileFail"
@@ -103,6 +111,14 @@ export type InitData = {
   sdkVersion: string;
   colorScheme: TggColorScheme;
   platform: string;
+  themeParams?: ThemeParams;
+  viewportHeight?: number;
+  viewportStableHeight?: number;
+  headerColor?: string;
+  backgroundColor?: string;
+  isFullscreen?: boolean;
+  safeAreaInset?: SafeAreaInset;
+  contentSafeAreaInset?: SafeAreaInset;
   launchContext?: LaunchContext;
 };
 
@@ -186,6 +202,14 @@ export type TggWebApp = MiniAppSDK & {
   readonly platform: string;
   readonly appVersion: string;
   readonly colorScheme: TggColorScheme;
+  readonly themeParams: ThemeParams;
+  readonly viewportHeight: number;
+  readonly viewportStableHeight: number;
+  readonly headerColor: string;
+  readonly backgroundColor: string;
+  readonly isFullscreen: boolean;
+  readonly safeAreaInset: SafeAreaInset;
+  readonly contentSafeAreaInset: SafeAreaInset;
 };
 
 export type TggRuntimeOptions = MiniAppSDKOptions & {
@@ -193,6 +217,23 @@ export type TggRuntimeOptions = MiniAppSDKOptions & {
   colorScheme?: TggColorScheme;
   platform?: string;
   version?: string;
+  themeParams?: ThemeParams;
+  viewportHeight?: number;
+  viewportStableHeight?: number;
+  headerColor?: string;
+  backgroundColor?: string;
+  isFullscreen?: boolean;
+  safeAreaInset?: SafeAreaInset;
+  contentSafeAreaInset?: SafeAreaInset;
+};
+
+export type ThemeParams = Record<string, string>;
+
+export type SafeAreaInset = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
 };
 
 type SystemLocale = {
