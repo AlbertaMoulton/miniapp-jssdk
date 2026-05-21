@@ -50,6 +50,32 @@ const GROUP_CONTAINER_IDS = {
 
 const LOG_LIMIT = 200;
 
+function resolveConsoleUrl(value) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return value;
+  }
+
+  try {
+    return new URL(value, window.location.href).href;
+  } catch {
+    return value;
+  }
+}
+
+function buildInitialForms() {
+  return Object.fromEntries(
+    API_ITEMS.map((item) => {
+      const defaultParams = { ...(item.defaultParams ?? {}) };
+
+      if (item.id === "downloadFile" && typeof defaultParams.url === "string") {
+        defaultParams.url = resolveConsoleUrl(defaultParams.url);
+      }
+
+      return [item.id, defaultParams];
+    }),
+  );
+}
+
 const state = {
   snapshot: buildEnvironmentSnapshot({
     injected: Boolean(window.tgg),
@@ -70,7 +96,7 @@ const state = {
     source: "all",
     level: "all",
   },
-  forms: Object.fromEntries(API_ITEMS.map((item) => [item.id, { ...(item.defaultParams ?? {}) }])),
+  forms: buildInitialForms(),
 };
 
 const containers = {
@@ -412,8 +438,9 @@ async function startDownloadTask(params) {
   }
 
   return await new Promise((resolve, reject) => {
+    const resolvedUrl = resolveConsoleUrl(params.url);
     const task = runtime.downloadFile({
-      url: params.url,
+      url: resolvedUrl,
       fileName: params.fileName,
       success(result) {
         updateDownloadState("success", {
@@ -452,7 +479,10 @@ async function startDownloadTask(params) {
     state.downloadTask = {
       task,
       status: "running",
-      params: serializeValue(params),
+      params: serializeValue({
+        ...params,
+        url: resolvedUrl,
+      }),
       progress: 0,
       startedAt: new Date().toISOString(),
     };
