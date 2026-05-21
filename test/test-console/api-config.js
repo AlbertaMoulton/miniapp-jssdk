@@ -41,7 +41,7 @@ export const API_ITEMS = [
     title: "downloadFile",
     kind: "task",
     defaultParams: {
-      url: "./test/assets/download-fixture.txt",
+      url: "https://d22wqdtjjmo1wy.cloudfront.net/attachments/74c76736049355d89a30a3ca5f90fbb3.jpg",
     },
   },
   {

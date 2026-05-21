@@ -451,7 +451,7 @@
   - `secondary_bg_color`
   - `#18A0FB`
 - `downloadFile.url`
-  - 优先使用项目内随测试页一起部署的小体积静态测试文件地址
+  - 稳定可访问的公开测试图片地址
 - `savePhoto.url`
   - 稳定可访问的公开测试图片地址
 - `saveVideo.url`

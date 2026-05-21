@@ -64,7 +64,7 @@ test("ships click-ready default params for device actions", () => {
   const saveVideoItem = API_ITEMS.find((item) => item.id === "saveVideo");
 
   expect(downloadItem?.defaultParams).toMatchObject({
-    url: "./test/assets/download-fixture.txt",
+    url: expect.stringMatching(/^https?:\/\//u),
   });
   expect(savePhotoItem?.defaultParams).toMatchObject({
     url: expect.stringMatching(/^https?:\/\//u),

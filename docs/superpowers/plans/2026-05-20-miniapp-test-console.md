@@ -311,10 +311,10 @@ test("provides first-class presets for header color and version checks", () => {
   expect(VERSION_PRESETS).toEqual(["1.0.0", "2.0.0", "3.2.0"]);
 });
 
-test("points download presets at the bundled local fixture", () => {
+test("points download presets at a remote downloadable asset", () => {
   const downloadItem = API_ITEMS.find((item) => item.id === "downloadFile");
   expect(downloadItem?.defaultParams).toMatchObject({
-    url: "./test/assets/download-fixture.txt",
+    url: expect.stringMatching(/^https?:\/\//u),
   });
 });
 ```
@@ -325,7 +325,7 @@ Run: `pnpm test -- --run test/test-console.api-config.test.ts`
 
 Expected: FAIL because `test/test-console/api-config.js` does not exist yet.
 
-- [ ] **Step 3: Implement the API metadata and bundled fixture**
+- [ ] **Step 3: Implement the API metadata and remote download preset**
 
 ```js
 export const API_GROUPS = [
@@ -371,7 +371,7 @@ export const API_ITEMS = [
     title: "downloadFile",
     kind: "task",
     defaultParams: {
-      url: "./test/assets/download-fixture.txt",
+      url: "https://d22wqdtjjmo1wy.cloudfront.net/attachments/74c76736049355d89a30a3ca5f90fbb3.jpg",
     },
   },
   {
