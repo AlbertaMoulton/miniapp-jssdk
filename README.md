@@ -21,6 +21,31 @@ Developer-facing API details are available in
 pnpm run build
 ```
 
+## Test Console
+
+For real-device TeamGaga validation, build the bundles first, then serve the repo root
+from a local static server:
+
+```sh
+pnpm run build
+python3 -m http.server 4173
+```
+
+Open [http://127.0.0.1:4173/test.html](http://127.0.0.1:4173/test.html).
+
+The console is designed to degrade safely in a normal browser:
+
+- if `window.tgg` is not injected, the environment panel shows the missing-runtime state
+- API controls stay visible but disabled when the runtime capability is unavailable
+- the CSS variable and safe-area sections still render for local layout work
+
+Key files:
+
+- `test.html`: standalone test-console entry page
+- `test/test-console/index.js`: bootstrap, runtime detection, event wiring, and execution flow
+- `test/test-console/dom.js`: rendering helpers for panels and controls
+- `test/test-console/state.js`: pure snapshot, log, and CSS-variable helpers
+
 The build emits SDK bundles and WebView runtime bundles:
 
 - `dist/index.esm.js`

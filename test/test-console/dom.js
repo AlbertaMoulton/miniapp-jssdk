@@ -169,11 +169,7 @@ const sanitizeForSerialization = (value, seen = new WeakSet(), depth = 0) => {
     }
 
     if (typeof descriptor.get === "function") {
-      output[normalizedKey] = sanitizeForSerialization(
-        readProperty(value, key),
-        seen,
-        depth + 1,
-      );
+      output[normalizedKey] = sanitizeForSerialization(readProperty(value, key), seen, depth + 1);
       continue;
     }
 
@@ -214,6 +210,58 @@ const createJsonBlock = (value, liveMode) => {
 };
 
 const createEmptyState = (message) => createElement("div", "empty-state", message);
+
+const createButton = (label, options = {}) => {
+  const button = createElement("button", options.className, label);
+
+  button.type = "button";
+
+  if (options.disabled) {
+    button.disabled = true;
+  }
+
+  if (options.title) {
+    button.title = options.title;
+  }
+
+  if (typeof options.onClick === "function") {
+    button.addEventListener("click", options.onClick);
+  }
+
+  return button;
+};
+
+const createTextControl = (itemId, key, value, onChange) => {
+  const input = document.createElement(value && String(value).length > 80 ? "textarea" : "input");
+
+  input.name = `${itemId}:${key}`;
+  input.dataset.apiId = itemId;
+  input.dataset.paramKey = key;
+  input.value = toText(value);
+
+  if (input instanceof HTMLInputElement) {
+    input.type = "text";
+  } else {
+    input.rows = 3;
+  }
+
+  if (typeof onChange === "function") {
+    input.addEventListener("input", (event) => {
+      onChange(itemId, key, event.currentTarget?.value ?? "");
+    });
+  }
+
+  return input;
+};
+
+const createField = (label, control) => {
+  const wrapper = createElement("label");
+  const heading = createElement("strong", null, label);
+
+  wrapper.append(heading, control);
+
+  return wrapper;
+};
 
 const createStatusPill = (isPositive, positiveLabel, negativeLabel) => {
   const pill = createElement(
@@ -383,18 +431,28 @@ export const renderEnvironmentOverview = (
   const safeSnapshot = normalizeObject(snapshot);
   const safeDiff = normalizeArray(diff);
   const panel = ensurePanelFrame(container, "Environment Overview");
-  const summaryGrid = ensureRegion(panel.body, ".grid.two-up", () => createElement("div", "grid two-up"));
+  const summaryGrid = ensureRegion(panel.body, ".grid.two-up", () =>
+    createElement("div", "grid two-up"),
+  );
   const initCard = ensureDataCard(summaryGrid, "init-data", "Init Data");
   const runtimeCard = ensureDataCard(summaryGrid, "runtime-snapshot", "Runtime Snapshot");
   const diffCard = ensureDataCard(panel.body, "diff-summary", "Diff Summary");
-  const checksCard = ensureDataCard(panel.body, "capabilities-version-checks", "Capabilities & Version Checks");
+  const checksCard = ensureDataCard(
+    panel.body,
+    "capabilities-version-checks",
+    "Capabilities & Version Checks",
+  );
 
   panel.status.replaceChildren(
     createStatusPill(Boolean(safeSnapshot.injected), "Injected", "Not injected"),
   );
 
-  replaceRegionContent(initCard.content, [createJsonBlock(safeSnapshot.initData ?? null, "polite")]);
-  replaceRegionContent(runtimeCard.content, [createJsonBlock(safeSnapshot.runtime ?? null, "polite")]);
+  replaceRegionContent(initCard.content, [
+    createJsonBlock(safeSnapshot.initData ?? null, "polite"),
+  ]);
+  replaceRegionContent(runtimeCard.content, [
+    createJsonBlock(safeSnapshot.runtime ?? null, "polite"),
+  ]);
   replaceRegionContent(diffCard.content, [
     safeDiff.length
       ? createJsonBlock(safeDiff, "polite")
@@ -434,11 +492,15 @@ const createApiCard = (itemId) => {
   return card;
 };
 
-const updateApiCard = (card, item, record) => {
+const updateApiCard = (card, item, record, options = {}) => {
   const heading = card.querySelector("h3");
   const meta = card.querySelector(".api-meta");
   const controls = card.querySelector('[data-role="controls"]');
   const result = card.querySelector('[data-role="result"]');
+  const safeOptions = normalizeObject(options);
+  const formValues = normalizeObject(safeOptions.formValues);
+  const runtimeState = normalizeObject(safeOptions.runtimeState);
+  const itemId = toText(item?.id);
 
   if (heading) {
     heading.textContent = toText(item?.title, "Untitled API");
@@ -448,15 +510,71 @@ const updateApiCard = (card, item, record) => {
     meta.textContent = buildApiMeta(item);
   }
 
-  if (controls && !controls.childNodes.length) {
-    controls.appendChild(createElement("span", "ghost-chip", "Controls attach in Task 4"));
+  if (controls) {
+    const nextControls = [];
+    const paramEntries = Object.entries(formValues);
+
+    for (const [key, value] of paramEntries) {
+      nextControls.push(
+        createField(key, createTextControl(itemId, key, value, safeOptions.onFormChange)),
+      );
+    }
+
+    if (Array.isArray(item?.presets) && item.presets.length) {
+      const select = document.createElement("select");
+
+      select.dataset.apiId = itemId;
+
+      for (const preset of item.presets) {
+        const option = document.createElement("option");
+
+        option.value = toText(preset);
+        option.textContent = toText(preset);
+        option.selected = formValues.color === preset;
+        select.appendChild(option);
+      }
+
+      if (typeof safeOptions.onPresetChange === "function") {
+        select.addEventListener("change", (event) => {
+          safeOptions.onPresetChange(itemId, event.currentTarget?.value ?? "");
+        });
+      }
+
+      nextControls.push(createField("preset", select));
+    }
+
+    if (runtimeState.boundLabel) {
+      nextControls.push(createElement("span", "ghost-chip", runtimeState.boundLabel));
+    }
+
+    if (runtimeState.extraLabel) {
+      nextControls.push(createElement("span", "ghost-chip", runtimeState.extraLabel));
+    }
+
+    nextControls.push(
+      createButton(runtimeState.actionLabel || "Run", {
+        disabled: Boolean(runtimeState.disabled),
+        title: runtimeState.disabledReason,
+        onClick: () => safeOptions.onInvoke?.(item),
+      }),
+    );
+
+    if (runtimeState.showAbort) {
+      nextControls.push(
+        createButton("Abort", {
+          disabled: Boolean(runtimeState.abortDisabled),
+          onClick: () => safeOptions.onAbort?.(item),
+        }),
+      );
+    }
+
+    replaceRegionContent(controls, nextControls);
   }
 
   if (result) {
-    appendChildren(
-      result,
-      [createJsonBlock(record ?? { status: "idle", message: "Awaiting runtime wiring" }, "polite")],
-    );
+    appendChildren(result, [
+      createJsonBlock(record ?? { status: "idle", message: "Awaiting runtime wiring" }, "polite"),
+    ]);
   }
 };
 
@@ -465,6 +583,7 @@ export const renderApiGroup = (
   group = {},
   items = [],
   callRecords = {},
+  options = {},
 ) => {
   if (!(container instanceof Element)) {
     return;
@@ -473,6 +592,7 @@ export const renderApiGroup = (
   const safeItems = normalizeArray(items);
   const safeCallRecords = normalizeObject(callRecords);
   const normalizedGroup = normalizeObject(group);
+  const normalizedOptions = normalizeObject(options);
   const title = toText(normalizedGroup.title, "API Group");
   const existingGrid = container.querySelector(".api-grid");
   const grid = existingGrid ?? createElement("div", "api-grid");
@@ -489,7 +609,14 @@ export const renderApiGroup = (
     const card = existingCard ?? createApiCard(itemId);
 
     nextIds.add(itemId);
-    updateApiCard(card, item, safeCallRecords[itemId]);
+    updateApiCard(card, item, safeCallRecords[itemId], {
+      formValues: normalizedOptions.forms?.[itemId],
+      runtimeState: normalizedOptions.runtimeStateById?.[itemId],
+      onFormChange: normalizedOptions.onFormChange,
+      onPresetChange: normalizedOptions.onPresetChange,
+      onInvoke: normalizedOptions.onInvoke,
+      onAbort: normalizedOptions.onAbort,
+    });
     orderedCards.push(card);
   }
 
@@ -502,20 +629,29 @@ export const renderApiGroup = (
   appendChildren(grid, orderedCards);
   const panel = ensurePanelFrame(container, title);
   setText(panel.title, title);
-  replaceRegionContent(panel.status, [createElement("span", "panel-note", `${safeItems.length} endpoints`)]);
+  replaceRegionContent(panel.status, [
+    createElement("span", "panel-note", `${safeItems.length} endpoints`),
+  ]);
 
   if (grid.parentNode !== panel.body) {
     panel.body.appendChild(grid);
   }
 };
 
-export const renderLogPanel = (container, logs = []) => {
+export const renderLogPanel = (container, logs = [], options = {}) => {
   if (!(container instanceof Element)) {
     return;
   }
 
   const panel = ensurePanelFrame(container, "Events & Logs");
   const safeLogs = normalizeArray(logs);
+  const safeOptions = normalizeObject(options);
+  const filters = normalizeObject(safeOptions.filters);
+  const toolbar = ensureRegion(panel.body, '[data-role="log-toolbar"]', () => {
+    const nextToolbar = createElement("div", "api-controls");
+    nextToolbar.dataset.role = "log-toolbar";
+    return nextToolbar;
+  });
   const list = ensureRegion(panel.body, ".log-list", () => createElement("div", "log-list"));
   const emptyState = ensureRegion(panel.body, '[data-role="log-empty"]', () => {
     const state = createEmptyState("No log entries yet.");
@@ -530,6 +666,47 @@ export const renderLogPanel = (container, logs = []) => {
   list.setAttribute("aria-live", "polite");
   list.setAttribute("aria-relevant", "additions text");
   list.setAttribute("aria-atomic", "false");
+
+  const sourceFilter = document.createElement("select");
+  const levelFilter = document.createElement("select");
+
+  for (const value of normalizeArray(safeOptions.availableSources ?? ["all"])) {
+    const option = document.createElement("option");
+    option.value = toText(value);
+    option.textContent = `source: ${toText(value)}`;
+    option.selected = toText(filters.source, "all") === option.value;
+    sourceFilter.appendChild(option);
+  }
+
+  for (const value of normalizeArray(safeOptions.availableLevels ?? ["all"])) {
+    const option = document.createElement("option");
+    option.value = toText(value);
+    option.textContent = `level: ${toText(value)}`;
+    option.selected = toText(filters.level, "all") === option.value;
+    levelFilter.appendChild(option);
+  }
+
+  if (typeof safeOptions.onFilterChange === "function") {
+    sourceFilter.addEventListener("change", (event) => {
+      safeOptions.onFilterChange("source", event.currentTarget?.value ?? "all");
+    });
+    levelFilter.addEventListener("change", (event) => {
+      safeOptions.onFilterChange("level", event.currentTarget?.value ?? "all");
+    });
+  }
+
+  replaceRegionContent(toolbar, [
+    sourceFilter,
+    levelFilter,
+    createButton("Copy logs", {
+      disabled: !safeLogs.length,
+      onClick: () => safeOptions.onCopy?.(),
+    }),
+    createButton("Clear logs", {
+      disabled: !safeLogs.length,
+      onClick: () => safeOptions.onClear?.(),
+    }),
+  ]);
 
   const orderedRows = safeLogs.map((rawEntry, index) => {
     const entry = normalizeObject(rawEntry);
@@ -579,7 +756,9 @@ export const renderLogPanel = (container, logs = []) => {
   setHidden(list, !safeLogs.length);
   setHidden(emptyState, Boolean(safeLogs.length));
 
-  replaceRegionContent(panel.status, [createElement("span", "status-copy", `${safeLogs.length} entries`)]);
+  replaceRegionContent(panel.status, [
+    createElement("span", "status-copy", `${safeLogs.length} entries`),
+  ]);
 };
 
 export const renderCssVariablePanel = (container, cssVariables = {}) => {
@@ -589,14 +768,19 @@ export const renderCssVariablePanel = (container, cssVariables = {}) => {
 
   const panel = ensurePanelFrame(container, "CSS Variables");
   const entries = Object.entries(normalizeObject(cssVariables));
-  const grid = ensureRegion(panel.body, ".css-var-grid", () => createElement("div", "css-var-grid"));
+  const grid = ensureRegion(panel.body, ".css-var-grid", () =>
+    createElement("div", "css-var-grid"),
+  );
   const emptyState = ensureRegion(panel.body, '[data-role="css-vars-empty"]', () => {
     const state = createEmptyState("No CSS variables captured yet.");
     state.dataset.role = "css-vars-empty";
     return state;
   });
   const existingCards = new Map(
-    Array.from(grid.querySelectorAll(".css-var-card")).map((card) => [card.dataset.cssVarName, card]),
+    Array.from(grid.querySelectorAll(".css-var-card")).map((card) => [
+      card.dataset.cssVarName,
+      card,
+    ]),
   );
 
   grid.setAttribute("aria-live", "polite");
@@ -631,7 +815,9 @@ export const renderCssVariablePanel = (container, cssVariables = {}) => {
   setHidden(grid, !entries.length);
   setHidden(emptyState, Boolean(entries.length));
 
-  replaceRegionContent(panel.status, [createElement("span", "status-copy", `${entries.length} variables`)]);
+  replaceRegionContent(panel.status, [
+    createElement("span", "status-copy", `${entries.length} variables`),
+  ]);
 };
 
 export const renderSafeAreaLab = (container, mode = {}) => {
@@ -643,6 +829,11 @@ export const renderSafeAreaLab = (container, mode = {}) => {
   const safeMode = normalizeObject(mode);
   const heightMode = toText(safeMode.height, "viewport");
   const bottomMode = toText(safeMode.bottom, "content-safe-area");
+  const controls = ensureRegion(panel.body, '[data-role="safe-area-controls"]', () => {
+    const nextControls = createElement("div", "api-controls");
+    nextControls.dataset.role = "safe-area-controls";
+    return nextControls;
+  });
   const demo = ensureRegion(panel.body, ".safe-area-demo", () => {
     const nextDemo = createElement("div", "safe-area-demo");
     nextDemo.appendChild(createElement("div", "safe-area-demo__header", "Sticky Header"));
@@ -660,9 +851,55 @@ export const renderSafeAreaLab = (container, mode = {}) => {
   demo.dataset.heightMode = heightMode;
   demo.dataset.bottomMode = bottomMode;
 
+  const heightSelect = document.createElement("select");
+  const bottomSelect = document.createElement("select");
+  const heightModes = [
+    { value: "vh", label: "100vh" },
+    { value: "viewport", label: "var(--tgg-viewport-height)" },
+    { value: "stable", label: "var(--tgg-viewport-stable-height)" },
+  ];
+  const bottomModes = [
+    { value: "safe-area", label: "env(safe-area-inset-bottom)" },
+    { value: "content-safe-area", label: "var(--tgg-content-safe-area-inset-bottom)" },
+  ];
+
+  for (const optionConfig of heightModes) {
+    const option = document.createElement("option");
+    option.value = optionConfig.value;
+    option.textContent = optionConfig.label;
+    option.selected = heightMode === optionConfig.value;
+    heightSelect.appendChild(option);
+  }
+
+  for (const optionConfig of bottomModes) {
+    const option = document.createElement("option");
+    option.value = optionConfig.value;
+    option.textContent = optionConfig.label;
+    option.selected = bottomMode === optionConfig.value;
+    bottomSelect.appendChild(option);
+  }
+
+  if (typeof safeMode.onModeChange === "function") {
+    heightSelect.addEventListener("change", (event) => {
+      safeMode.onModeChange("height", event.currentTarget?.value ?? "viewport");
+    });
+    bottomSelect.addEventListener("change", (event) => {
+      safeMode.onModeChange("bottom", event.currentTarget?.value ?? "content-safe-area");
+    });
+  }
+
+  replaceRegionContent(controls, [
+    createField("height", heightSelect),
+    createField("bottom", bottomSelect),
+  ]);
+
   replaceRegionContent(panel.status, [
     createElement("span", "status-copy", `height: ${heightMode} / bottom: ${bottomMode}`),
   ]);
+
+  if (controls.parentNode !== panel.body) {
+    panel.body.appendChild(controls);
+  }
 
   if (demo.parentNode !== panel.body) {
     panel.body.appendChild(demo);
