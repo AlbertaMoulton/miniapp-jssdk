@@ -322,19 +322,6 @@ const ensurePanelFrame = (container, panelTitle) => {
   return { head, title, status, body };
 };
 
-const createDataCard = (title, contentNode) => {
-  const card = createElement("article", "data-card");
-  const heading = createElement("h3", null, title);
-
-  card.appendChild(heading);
-
-  if (contentNode) {
-    card.appendChild(contentNode);
-  }
-
-  return card;
-};
-
 const normalizeArray = (value) => (Array.isArray(value) ? value : []);
 
 const normalizeObject = (value) =>

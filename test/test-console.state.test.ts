@@ -11,6 +11,9 @@ import {
 describe("buildEnvironmentSnapshot", () => {
   test("captures init data and runtime getters into a comparable shape", () => {
     const snapshot = buildEnvironmentSnapshot({
+      injected: true,
+      transport: "flutter_inappwebview",
+      initError: null,
       initData: {
         appVersion: "3.4.0",
         sdkVersion: "0.2.0",
@@ -70,9 +73,11 @@ describe("buildCallRecord", () => {
   test("computes duration and preserves error payloads", () => {
     const record = buildCallRecord({
       name: "ready",
+      params: null,
       startedAt: 100,
       finishedAt: 140,
       status: "error",
+      result: null,
       error: { code: "FAIL", message: "boom" },
     });
 
@@ -88,8 +93,11 @@ describe("buildCallRecord", () => {
     expect(
       buildCallRecord({
         name: "ready",
+        params: null,
+        startedAt: null,
         finishedAt: 140,
         status: "error",
+        result: null,
         error: { code: "FAIL", message: "boom" },
       }),
     ).toMatchObject({
@@ -108,6 +116,7 @@ describe("createLogEntry", () => {
         source: "api",
         level: "info",
         message: "init ok",
+        detail: null,
       }),
     ).toMatchObject({
       source: "api",
@@ -120,7 +129,7 @@ describe("createLogEntry", () => {
 describe("collectCssVariables", () => {
   test("reads known tgg variables from computed style", () => {
     const variables = collectCssVariables({
-      getPropertyValue(name) {
+      getPropertyValue(name: string) {
         if (name === "--tgg-color-scheme") return "dark";
         if (name === "--tgg-viewport-height") return "812px";
         return "";

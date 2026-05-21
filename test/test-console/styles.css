@@ -54,9 +54,7 @@ body::before {
   position: relative;
   width: min(100%, var(--page-max-width));
   margin: 0 auto;
-  padding:
-    calc(28px + var(--tgg-safe-area-inset-top, 0px))
-    var(--page-gutter)
+  padding: calc(28px + var(--tgg-safe-area-inset-top, 0px)) var(--page-gutter)
     calc(40px + var(--tgg-content-safe-area-inset-bottom, 0px));
 }
 
@@ -64,9 +62,7 @@ body::before {
   padding: 28px 28px 22px;
   border-radius: 32px;
   color: #f8fbff;
-  background:
-    linear-gradient(135deg, rgba(16, 32, 51, 0.98), rgba(24, 160, 251, 0.85)),
-    #102033;
+  background: linear-gradient(135deg, rgba(16, 32, 51, 0.98), rgba(24, 160, 251, 0.85)), #102033;
   box-shadow: 0 24px 60px rgba(16, 32, 51, 0.18);
 }
 
@@ -322,9 +318,7 @@ body::before {
   min-height: 320px;
   border: 1px solid rgba(16, 32, 51, 0.08);
   border-radius: 28px;
-  background:
-    linear-gradient(180deg, rgba(24, 160, 251, 0.12), rgba(12, 155, 119, 0.08)),
-    #f7fbff;
+  background: linear-gradient(180deg, rgba(24, 160, 251, 0.12), rgba(12, 155, 119, 0.08)), #f7fbff;
 }
 
 .safe-area-demo__header,

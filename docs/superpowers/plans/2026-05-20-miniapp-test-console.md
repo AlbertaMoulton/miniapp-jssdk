@@ -44,6 +44,7 @@
 ## Task 1: Build the test-console state model first
 
 **Files:**
+
 - Create: `test/test-console/state.js`
 - Test: `test/test-console.state.test.ts`
 
@@ -173,7 +174,13 @@ const ENVIRONMENT_FIELDS = [
   "launchContext",
 ];
 
-export const buildEnvironmentSnapshot = ({ initData, runtime, transport, injected, initError }) => ({
+export const buildEnvironmentSnapshot = ({
+  initData,
+  runtime,
+  transport,
+  injected,
+  initError,
+}) => ({
   injected,
   transport,
   initError: initError ?? null,
@@ -236,9 +243,7 @@ const CSS_VARIABLE_NAMES = [
 ];
 
 export const collectCssVariables = (style) =>
-  Object.fromEntries(
-    CSS_VARIABLE_NAMES.map((name) => [name, style.getPropertyValue(name).trim()]),
-  );
+  Object.fromEntries(CSS_VARIABLE_NAMES.map((name) => [name, style.getPropertyValue(name).trim()]));
 ```
 
 - [ ] **Step 4: Run the state-helper tests again**
@@ -257,6 +262,7 @@ git commit -m "test: add miniapp console state helpers"
 ## Task 2: Lock the first-version API coverage in config
 
 **Files:**
+
 - Create: `test/test-console/api-config.js`
 - Create: `test/assets/download-fixture.txt`
 - Test: `test/test-console.api-config.test.ts`
@@ -266,11 +272,7 @@ git commit -m "test: add miniapp console state helpers"
 ```ts
 import { expect, test } from "vite-plus/test";
 
-import {
-  API_GROUPS,
-  API_ITEMS,
-  VERSION_PRESETS,
-} from "../test/test-console/api-config.js";
+import { API_GROUPS, API_ITEMS, VERSION_PRESETS } from "../test/test-console/api-config.js";
 
 test("covers all approved P0 P1 P2 api items", () => {
   expect(API_GROUPS.map((group) => group.id)).toEqual([
@@ -351,7 +353,12 @@ export const API_ITEMS = [
   { id: "backButtonShow", group: "lifecycle-ui", title: "BackButton.show", kind: "method" },
   { id: "backButtonHide", group: "lifecycle-ui", title: "BackButton.hide", kind: "method" },
   { id: "backButtonBind", group: "lifecycle-ui", title: "BackButton.onClick", kind: "event-bind" },
-  { id: "backButtonUnbind", group: "lifecycle-ui", title: "BackButton.offClick", kind: "event-bind" },
+  {
+    id: "backButtonUnbind",
+    group: "lifecycle-ui",
+    title: "BackButton.offClick",
+    kind: "event-bind",
+  },
   { id: "getOauthCode", group: "business-system", title: "getOauthCode", kind: "method" },
   { id: "getUserId", group: "business-system", title: "getUserId", kind: "method" },
   { id: "getUserInfo", group: "business-system", title: "getUserInfo", kind: "method" },
@@ -409,6 +416,7 @@ git commit -m "test: define miniapp console api metadata"
 ## Task 3: Build the standalone page shell and renderers
 
 **Files:**
+
 - Create: `test.html`
 - Create: `test/test-console/styles.css`
 - Create: `test/test-console/dom.js`
@@ -420,10 +428,7 @@ git commit -m "test: define miniapp console api metadata"
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>TeamGaga MiniApp Test Console</title>
     <link rel="stylesheet" href="./test/test-console/styles.css" />
   </head>
@@ -432,7 +437,9 @@ git commit -m "test: define miniapp console api metadata"
       <header class="hero">
         <p class="eyebrow">TeamGaga MiniApp JS SDK</p>
         <h1>Real-device test console</h1>
-        <p class="hero-copy">P0 + P1 + P2 coverage for API calls, events, CSS vars, and safe area.</p>
+        <p class="hero-copy">
+          P0 + P1 + P2 coverage for API calls, events, CSS vars, and safe area.
+        </p>
       </header>
 
       <section id="environment-overview" class="panel"></section>
@@ -477,9 +484,7 @@ body {
 .page-shell {
   width: min(100%, var(--page-max-width));
   margin: 0 auto;
-  padding:
-    calc(24px + var(--tgg-safe-area-inset-top, 0px))
-    16px
+  padding: calc(24px + var(--tgg-safe-area-inset-top, 0px)) 16px
     calc(32px + var(--tgg-content-safe-area-inset-bottom, 0px));
 }
 
@@ -498,7 +503,13 @@ body {
 ```js
 const json = (value) => `<pre>${escapeHtml(JSON.stringify(value, null, 2) ?? "")}</pre>`;
 
-export const renderEnvironmentOverview = (container, snapshot, diff, capabilities, versionChecks) => {
+export const renderEnvironmentOverview = (
+  container,
+  snapshot,
+  diff,
+  capabilities,
+  versionChecks,
+) => {
   container.innerHTML = `
     <div class="panel-head">
       <h2>Environment Overview</h2>
@@ -563,6 +574,7 @@ git commit -m "feat: add miniapp test console shell"
 ## Task 4: Wire runtime detection, API execution, logs, CSS vars, and safe-area lab
 
 **Files:**
+
 - Create: `test/test-console/index.js`
 - Modify: `test/test-console/dom.js`
 - Modify: `README.md`
@@ -587,7 +599,10 @@ import {
 } from "./dom.js";
 
 const state = {
-  snapshot: buildEnvironmentSnapshot({ injected: Boolean(window.tgg), transport: detectTransport() }),
+  snapshot: buildEnvironmentSnapshot({
+    injected: Boolean(window.tgg),
+    transport: detectTransport(),
+  }),
   callRecords: {},
   logs: [],
   cssVariables: {},
@@ -707,7 +722,7 @@ export const renderSafeAreaLab = (container, mode) => {
 
 Add this README section:
 
-```md
+````md
 ## Test Console
 
 For real-device TeamGaga validation, open `test.html` from a static file server after building the SDK bundles:
@@ -716,16 +731,18 @@ For real-device TeamGaga validation, open `test.html` from a static file server 
 pnpm run build
 python3 -m http.server 4173
 ```
+````
 
 Then open `http://127.0.0.1:4173/test.html`.
-```
+
+````
 
 Run:
 
 ```sh
 pnpm test -- --run test/test-console.state.test.ts test/test-console.api-config.test.ts
 pnpm run build
-```
+````
 
 Expected:
 

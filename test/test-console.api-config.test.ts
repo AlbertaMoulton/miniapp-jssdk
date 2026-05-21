@@ -1,10 +1,6 @@
 import { expect, test } from "vite-plus/test";
 
-import {
-  API_GROUPS,
-  API_ITEMS,
-  VERSION_PRESETS,
-} from "../test/test-console/api-config.js";
+import { API_GROUPS, API_ITEMS, VERSION_PRESETS } from "../test/test-console/api-config.js";
 
 test("covers all approved P0 P1 P2 api items", () => {
   expect(API_GROUPS.map((group) => group.id)).toEqual([
@@ -39,9 +35,9 @@ test("keeps api item config structurally valid", () => {
   const groupIds = new Set(API_GROUPS.map((group) => group.id));
   const validKinds = new Set(["method", "event-bind", "task", "event"]);
 
-  expect(API_GROUPS.every((group) => typeof group.title === "string" && group.title.trim().length > 0)).toBe(
-    true,
-  );
+  expect(
+    API_GROUPS.every((group) => typeof group.title === "string" && group.title.trim().length > 0),
+  ).toBe(true);
 
   expect(
     API_ITEMS.every(

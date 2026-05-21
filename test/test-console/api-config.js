@@ -23,7 +23,12 @@ export const API_ITEMS = [
   { id: "backButtonShow", group: "lifecycle-ui", title: "BackButton.show", kind: "method" },
   { id: "backButtonHide", group: "lifecycle-ui", title: "BackButton.hide", kind: "method" },
   { id: "backButtonBind", group: "lifecycle-ui", title: "BackButton.onClick", kind: "event-bind" },
-  { id: "backButtonUnbind", group: "lifecycle-ui", title: "BackButton.offClick", kind: "event-bind" },
+  {
+    id: "backButtonUnbind",
+    group: "lifecycle-ui",
+    title: "BackButton.offClick",
+    kind: "event-bind",
+  },
   { id: "getOauthCode", group: "business-system", title: "getOauthCode", kind: "method" },
   { id: "getUserId", group: "business-system", title: "getUserId", kind: "method" },
   { id: "getUserInfo", group: "business-system", title: "getUserInfo", kind: "method" },
@@ -36,7 +41,7 @@ export const API_ITEMS = [
     title: "downloadFile",
     kind: "task",
     defaultParams: {
-      url: "https://d22wqdtjjmo1wy.cloudfront.net/attachments/74c76736049355d89a30a3ca5f90fbb3.jpg",
+      url: "./test/assets/download-fixture.txt",
     },
   },
   {

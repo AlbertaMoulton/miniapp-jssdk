@@ -29,19 +29,6 @@ const ENVIRONMENT_FIELDS = [
   "launchContext",
 ];
 
-const EVENT_NAMES = [
-  "themeChanged",
-  "viewportChanged",
-  "safeAreaChanged",
-  "contentSafeAreaChanged",
-  "fullscreenChanged",
-  "backButtonClicked",
-  "downloadFileProgress",
-  "downloadFileSuccess",
-  "downloadFileFail",
-  "clipboardTextReceived",
-];
-
 const GROUP_CONTAINER_IDS = {
   "lifecycle-ui": "lifecycle-ui-api",
   "business-system": "business-system-api",
@@ -65,7 +52,7 @@ function resolveConsoleUrl(value) {
 function buildInitialForms() {
   return Object.fromEntries(
     API_ITEMS.map((item) => {
-      const defaultParams = { ...(item.defaultParams ?? {}) };
+      const defaultParams = { ...item.defaultParams };
 
       if (item.id === "downloadFile" && typeof defaultParams.url === "string") {
         defaultParams.url = resolveConsoleUrl(defaultParams.url);
@@ -357,12 +344,12 @@ async function refreshEnvironment() {
 }
 
 function getFormParams(itemId) {
-  return { ...(state.forms[itemId] ?? {}) };
+  return { ...state.forms[itemId] };
 }
 
 function setFormValue(itemId, key, value) {
   state.forms[itemId] = {
-    ...(state.forms[itemId] ?? {}),
+    ...state.forms[itemId],
     [key]: value,
   };
 }
@@ -390,7 +377,7 @@ function updateClipboardRecord(payload) {
 
 function updateDownloadState(status, patch = {}) {
   state.downloadTask = {
-    ...(state.downloadTask ?? {}),
+    ...state.downloadTask,
     status,
     ...patch,
   };
@@ -637,7 +624,7 @@ function getApiRuntimeState(item) {
   return {
     disabled,
     disabledReason: hostCapabilityMissing
-      ? lastError?.friendlyMessage ?? "Host runtime does not implement this miniapp method"
+      ? (lastError?.friendlyMessage ?? "Host runtime does not implement this miniapp method")
       : !isInjected
         ? "window.tgg is not injected"
         : capabilityKnown === false

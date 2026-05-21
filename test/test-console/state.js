@@ -74,15 +74,7 @@ export const buildEnvironmentDiff = ({ initData, runtime }) =>
       : [{ field, initValue, runtimeValue }];
   });
 
-export const buildCallRecord = ({
-  name,
-  params,
-  startedAt,
-  finishedAt,
-  status,
-  result,
-  error,
-}) => {
+export const buildCallRecord = ({ name, params, startedAt, finishedAt, status, result, error }) => {
   const hasValidTiming = Number.isFinite(startedAt) && Number.isFinite(finishedAt);
 
   return {
