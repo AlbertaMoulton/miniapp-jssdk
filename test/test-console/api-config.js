@@ -36,19 +36,25 @@ export const API_ITEMS = [
     title: "downloadFile",
     kind: "task",
     defaultParams: {
-      url: "./test/assets/download-fixture.txt",
-      fileName: "teamgaga-test-file.txt",
+      url: "https://d22wqdtjjmo1wy.cloudfront.net/attachments/74c76736049355d89a30a3ca5f90fbb3.jpg",
     },
   },
   {
-    id: "saveImageToAlbum",
+    id: "savePhoto",
     group: "device",
-    title: "saveImageToAlbum",
+    title: "savePhoto",
     kind: "method",
     defaultParams: {
-      fileName: "teamgaga-test-image.png",
-      dataUrl:
-        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4////fwAJ+wP9KobjigAAAABJRU5ErkJggg==",
+      url: "https://cdn-test.teamgaga.com/attachments/f1p3uesp340-fb14c7dc-a7df-4442-a156-f489fcf59486.jpg",
+    },
+  },
+  {
+    id: "saveVideo",
+    group: "device",
+    title: "saveVideo",
+    kind: "method",
+    defaultParams: {
+      url: "https://d22wqdtjjmo1wy.cloudfront.net/attachments/4d9e1e7737e2d05cb38558d6f742024b.mp4",
     },
   },
   { id: "clipboardTextReceived", group: "device", title: "clipboardTextReceived", kind: "event" },

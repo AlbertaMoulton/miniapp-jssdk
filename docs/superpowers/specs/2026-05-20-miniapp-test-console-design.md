@@ -7,7 +7,7 @@
 - 生命周期 API：`init`、`ready`、`close`
 - UI API：`setHeaderColor`、`BackButton.show/hide`
 - 用户与业务 API：`getOauthCode`、`getUserId`、`getUserInfo`、`getCommunityId`、`getCommunityInfo`
-- 系统与设备能力：`getSystemInfo`、`downloadFile`、`saveImageToAlbum`
+- 系统与设备能力：`getSystemInfo`、`downloadFile`、`savePhoto`、`saveVideo`
 - 运行时事件：`themeChanged`、`viewportChanged`、`safeAreaChanged`、`contentSafeAreaChanged`、`fullscreenChanged`、`backButtonClicked`、`downloadFile*`、`clipboardTextReceived`
 - CSS 变量同步：`--tgg-*`
 
@@ -42,7 +42,8 @@
   - CSS 变量动态验证
 - `P2`
   - `downloadFile`
-  - `saveImageToAlbum`
+  - `savePhoto`
+  - `saveVideo`
   - `clipboardTextReceived`
   - 安全区与 viewport 可视化实验区
 
@@ -213,12 +214,13 @@
 包含三类能力：
 
 - `downloadFile`
-- `saveImageToAlbum`
+- `savePhoto`
+- `saveVideo`
 - `clipboardTextReceived`
 
 `downloadFile` 需要完整展示生命周期：
 
-- 输入参数：`url`、`fileName`
+- 输入参数：`url`
 - 调用开始时间
 - 当前任务状态：idle / running / success / fail / aborted
 - 实时进度条
@@ -229,7 +231,7 @@
 
 页面会内置一组默认可测参数，但允许手动修改。
 
-`saveImageToAlbum` 需要内置一张极小的 `dataUrl` 示例图，避免真机测试时还要额外准备素材。
+`savePhoto` 和 `saveVideo` 都需要内置可直接点击测试的远程素材 URL，避免真机测试时还要额外准备资源。
 
 `clipboardTextReceived` 使用事件监听模式展示最近一次接收到的文本内容和接收时间。
 
@@ -450,12 +452,10 @@
   - `#18A0FB`
 - `downloadFile.url`
   - 优先使用项目内随测试页一起部署的小体积静态测试文件地址
-- `downloadFile.fileName`
-  - `teamgaga-test-file.bin`
-- `saveImageToAlbum.fileName`
-  - `teamgaga-test-image.png`
-- `saveImageToAlbum.dataUrl`
-  - 一张极小 PNG 的 base64 data URL
+- `savePhoto.url`
+  - 稳定可访问的公开测试图片地址
+- `saveVideo.url`
+  - 稳定可访问的公开测试视频地址
 - `isVersionAtLeast` 预设版本
   - `1.0.0`
   - `2.0.0`
@@ -487,7 +487,8 @@
   - `setHeaderColor` 生效
   - 业务和系统 API 返回结构正确
   - `downloadFile` 进度、成功、失败、abort
-  - `saveImageToAlbum` 返回结果正确
+  - `savePhoto` 返回结果正确
+  - `saveVideo` 返回结果正确
   - `clipboardTextReceived` 能收到宿主事件
   - 主题变化或宿主布局变化后，CSS 变量区同步更新
 - 普通浏览器环境

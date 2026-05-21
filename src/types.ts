@@ -13,7 +13,8 @@ export type MiniAppMethod =
   | "getCommunityInfo"
   | "downloadFile"
   | "abortDownloadFile"
-  | "saveImageToAlbum";
+  | "savePhoto"
+  | "saveVideo";
 
 export type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
 
@@ -142,7 +143,6 @@ export type DownloadTaskCallback = (res: DownloadProgress) => void;
 
 export type DownloadFileOptions = {
   url: string;
-  fileName?: string;
   success?(res: DownloadFileSuccessResult): void;
   fail?(res: DownloadFileFailResult): void;
   complete?(res: DownloadFileCompleteResult): void;
@@ -154,9 +154,12 @@ export type DownloadTask = {
   offProgressUpdate(callback: DownloadTaskCallback): void;
 };
 
-export type SaveImageToAlbumOptions = {
-  fileName?: string;
-  dataUrl: string;
+export type SavePhotoOptions = {
+  url: string;
+};
+
+export type SaveVideoOptions = {
+  url: string;
 };
 
 export type ClipboardTextReceivedResult = {
@@ -182,7 +185,8 @@ export type MiniAppSDK = {
   getCommunityId(): Promise<string>;
   getCommunityInfo(): Promise<CommunityInfo>;
   downloadFile(options: DownloadFileOptions): DownloadTask;
-  saveImageToAlbum(options: SaveImageToAlbumOptions): Promise<boolean>;
+  savePhoto(options: SavePhotoOptions): Promise<boolean>;
+  saveVideo(options: SaveVideoOptions): Promise<boolean>;
   onClipboardTextReceived(callback: ClipboardTextReceivedCallback): () => void;
   BackButton: TggBackButton;
   receiveEvent(eventName: TggEventName, payload?: unknown): void;

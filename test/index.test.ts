@@ -1069,7 +1069,6 @@ test("downloadFile starts a native download task and returns task controls", asy
   const complete = vi.fn();
   const task = runtime.downloadFile({
     url: "https://example.com/report.pdf",
-    fileName: "report.pdf",
     success,
     complete,
   });
@@ -1084,7 +1083,6 @@ test("downloadFile starts a native download task and returns task controls", asy
       params: {
         taskId: "tgg_download_1",
         url: "https://example.com/report.pdf",
-        fileName: "report.pdf",
       },
     },
   });
@@ -1199,7 +1197,6 @@ test("downloadFile rejects invalid params locally", () => {
 
   runtime.downloadFile({
     url: "ftp://example.com/report.pdf",
-    fileName: "../report.pdf",
     fail,
     complete,
   });
@@ -1209,7 +1206,7 @@ test("downloadFile rejects invalid params locally", () => {
   expect(calls).toEqual([]);
 });
 
-test("saveImageToAlbum asks native to save a data url image", async () => {
+test("savePhoto asks native to save a remote photo", async () => {
   const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
   testGlobal.flutter_inappwebview = {
     async callHandler(handlerName: string, payload: unknown) {
@@ -1221,18 +1218,43 @@ test("saveImageToAlbum asks native to save a data url image", async () => {
   const runtime = createTggRuntime();
 
   await expect(
-    runtime.saveImageToAlbum({
-      fileName: "aaa.jpg",
-      dataUrl: "data:image/png;base64,iVBORw0KGgoAAAA",
+    runtime.savePhoto({
+      url: "https://example.com/photo.jpg",
     }),
   ).resolves.toBe(true);
   expect(calls[0]).toMatchObject({
     handlerName: "nativeBridge",
     payload: {
-      method: "saveImageToAlbum",
+      method: "savePhoto",
       params: {
-        fileName: "aaa.jpg",
-        dataUrl: "data:image/png;base64,iVBORw0KGgoAAAA",
+        url: "https://example.com/photo.jpg",
+      },
+    },
+  });
+});
+
+test("saveVideo asks native to save a remote video", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  testGlobal.flutter_inappwebview = {
+    async callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+      return { success: true, data: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+
+  await expect(
+    runtime.saveVideo({
+      url: "https://example.com/video.mp4",
+    }),
+  ).resolves.toBe(true);
+  expect(calls[0]).toMatchObject({
+    handlerName: "nativeBridge",
+    payload: {
+      method: "saveVideo",
+      params: {
+        url: "https://example.com/video.mp4",
       },
     },
   });
@@ -1256,6 +1278,7 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
     "getCommunityInfo",
     "downloadFile",
     "abortDownloadFile",
-    "saveImageToAlbum",
+    "savePhoto",
+    "saveVideo",
   ]);
 });

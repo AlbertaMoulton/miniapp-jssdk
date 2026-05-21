@@ -17,7 +17,8 @@ import type {
   MiniAppMethod,
   MiniAppSDK,
   MiniAppSDKOptions,
-  SaveImageToAlbumOptions,
+  SavePhotoOptions,
+  SaveVideoOptions,
   SystemInfo,
   UserInfo,
   TggEventName,
@@ -29,7 +30,6 @@ const BACK_BUTTON_CLICKED_EVENT: TggEventName = "backButtonClicked";
 const CLIPBOARD_TEXT_RECEIVED_EVENT: TggEventName = "clipboardTextReceived";
 const DOWNLOAD_ABORT_MESSAGE = "downloadFile:abort";
 const DOWNLOAD_OK_MESSAGE = "downloadFile:ok";
-const DOWNLOAD_FILE_NAME_ERROR_MESSAGE = "downloadFile:fail invalid fileName";
 const DOWNLOAD_URL_ERROR_MESSAGE = "downloadFile:fail invalid url";
 const BACK_BUTTON_HANDLER_ERROR_MESSAGE = "[Teamgaga] BackButton.onClick handler failed";
 const INVALID_HEADER_COLOR_CODE = "INVALID_HEADER_COLOR";
@@ -50,7 +50,8 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "getCommunityInfo" },
   { name: "downloadFile" },
   { name: "abortDownloadFile" },
-  { name: "saveImageToAlbum" },
+  { name: "savePhoto" },
+  { name: "saveVideo" },
   { name: "themeChanged" },
   { name: "backButtonClicked" },
   { name: "viewportChanged" },
@@ -78,7 +79,8 @@ export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
   "getCommunityInfo",
   "downloadFile",
   "abortDownloadFile",
-  "saveImageToAlbum",
+  "savePhoto",
+  "saveVideo",
 ];
 
 type DownloadTaskState = {
@@ -216,7 +218,6 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     void invoke<void>("downloadFile", {
       taskId,
       url: options.url,
-      ...(options.fileName ? { fileName: options.fileName } : {}),
     }).catch((error: unknown) => {
       const message = error instanceof Error ? error.message : "downloadFile:fail";
       const state = downloadTasks.get(taskId);
@@ -327,8 +328,8 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     getCommunityId: () => invoke<string>("getCommunityId"),
     getCommunityInfo: () => invoke<CommunityInfo>("getCommunityInfo"),
     downloadFile,
-    saveImageToAlbum: (options: SaveImageToAlbumOptions) =>
-      invoke<boolean>("saveImageToAlbum", options),
+    savePhoto: (options: SavePhotoOptions) => invoke<boolean>("savePhoto", options),
+    saveVideo: (options: SaveVideoOptions) => invoke<boolean>("saveVideo", options),
     onClipboardTextReceived,
     receiveEvent,
     BackButton: {
@@ -396,22 +397,11 @@ const getDownloadFileValidationError = (options: DownloadFileOptions): string | 
     return DOWNLOAD_URL_ERROR_MESSAGE;
   }
 
-  if (typeof options.fileName !== "undefined" && !isSafeFileName(options.fileName)) {
-    return DOWNLOAD_FILE_NAME_ERROR_MESSAGE;
-  }
-
   return undefined;
 };
 
 const isHttpUrl = (value: string): boolean => {
   return /^https?:\/\/\S+$/i.test(value);
-};
-
-const isSafeFileName = (fileName: string): boolean => {
-  const trimmedFileName = fileName.trim();
-  return (
-    trimmedFileName.length > 0 && !trimmedFileName.includes("/") && !trimmedFileName.includes("\\")
-  );
 };
 
 const getStringValue = (payload: unknown, key: string): string | undefined => {

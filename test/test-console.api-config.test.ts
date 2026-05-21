@@ -29,7 +29,8 @@ test("covers all approved P0 P1 P2 api items", () => {
     "getCommunityId",
     "getCommunityInfo",
     "downloadFile",
-    "saveImageToAlbum",
+    "savePhoto",
+    "saveVideo",
     "clipboardTextReceived",
   ]);
 });
@@ -63,14 +64,16 @@ test("provides first-class presets for header color and version checks", () => {
 
 test("ships click-ready default params for device actions", () => {
   const downloadItem = API_ITEMS.find((item) => item.id === "downloadFile");
-  const saveImageItem = API_ITEMS.find((item) => item.id === "saveImageToAlbum");
+  const savePhotoItem = API_ITEMS.find((item) => item.id === "savePhoto");
+  const saveVideoItem = API_ITEMS.find((item) => item.id === "saveVideo");
 
   expect(downloadItem?.defaultParams).toMatchObject({
     url: "./test/assets/download-fixture.txt",
-    fileName: "teamgaga-test-file.txt",
   });
-  expect(saveImageItem?.defaultParams).toMatchObject({
-    fileName: "teamgaga-test-image.png",
-    dataUrl: expect.stringMatching(/^data:image\/png;base64,/u),
+  expect(savePhotoItem?.defaultParams).toMatchObject({
+    url: expect.stringMatching(/^https?:\/\//u),
+  });
+  expect(saveVideoItem?.defaultParams).toMatchObject({
+    url: expect.stringMatching(/^https?:\/\//u),
   });
 });

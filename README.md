@@ -85,7 +85,6 @@ Download a file with progress:
 ```ts
 const task = tgg.downloadFile({
   url: "https://example.com/report.pdf",
-  fileName: "report.pdf",
   success({ tempFilePath }) {
     console.log(tempFilePath);
   },
@@ -105,12 +104,20 @@ task.onProgressUpdate(({ progress }) => {
 task.abort();
 ```
 
-Save a data URL image to the system album:
+Save a remote photo to the system album:
 
 ```ts
-const saved = await tgg.saveImageToAlbum({
-  fileName: "aaa.jpg",
-  dataUrl: "data:image/png;base64,iVBORw0KGgoAAAA...",
+const saved = await tgg.savePhoto({
+  url: "https://example.com/photo.jpg",
+});
+console.log(saved);
+```
+
+Save a remote video to the system album:
+
+```ts
+const saved = await tgg.saveVideo({
+  url: "https://example.com/video.mp4",
 });
 console.log(saved);
 ```

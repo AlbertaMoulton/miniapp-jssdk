@@ -279,7 +279,6 @@ tgg.downloadFile(options: DownloadFileOptions): DownloadTask
 | 字段       | 类型                                                     | 必填 | 说明                                       |
 | ---------- | -------------------------------------------------------- | ---- | ------------------------------------------ |
 | `url`      | `string`                                                 | 是   | 下载地址，仅支持 `http://` 和 `https://`。 |
-| `fileName` | `string \| undefined`                                    | 否   | 保存文件名，不能包含 `/` 或 `\`。          |
 | `success`  | `((res: { tempFilePath: string }) => void) \| undefined` | 否   | 下载成功回调。                             |
 | `fail`     | `((res: { errMsg: string }) => void) \| undefined`       | 否   | 下载失败回调。                             |
 | `complete` | `((res: { errMsg: string }) => void) \| undefined`       | 否   | 成功、失败或取消后都会执行的回调。         |
@@ -305,7 +304,6 @@ type DownloadTaskCallback = (res: { progress: number }) => void;
 ```ts
 const task = tgg.downloadFile({
   url: "https://example.com/report.pdf",
-  fileName: "report.pdf",
   success({ tempFilePath }) {
     console.log(tempFilePath);
   },
@@ -335,31 +333,30 @@ task.abort();
 - `downloadFile()` 会立即返回 `DownloadTask`，不会等待下载完成。
 - `success` 的 `tempFilePath` 由 Flutter Host 决定，可以是临时路径或宿主侧可识别路径。
 - `abort()` 会调用 Native 的 `abortDownloadFile`，并以 `downloadFile:abort` 触发 `fail` 和 `complete`。
-- 如果 `url` 或 `fileName` 不合法，SDK 会本地触发 `fail` 和 `complete`，不会调用 Native。
+- 如果 `url` 不合法，SDK 会本地触发 `fail` 和 `complete`，不会调用 Native。
 
-### `tgg.saveImageToAlbum(options)`
+### `tgg.savePhoto(options)`
 
 ```ts
-tgg.saveImageToAlbum(options: SaveImageToAlbumOptions): Promise<boolean>
+tgg.savePhoto(options: SavePhotoOptions): Promise<boolean>
 ```
 
 使用场景：
 
-- 将 Data URL 格式的图片保存到系统相册。
-- 适合截图、海报、二维码等 H5 已经生成图片数据的场景。
+- 将远程图片保存到系统相册。
+- 适合海报、分享图、远程素材落盘等场景。
 
 参数：
 
-| 参数      | 类型                      | 必填 | 说明           |
-| --------- | ------------------------- | ---- | -------------- |
-| `options` | `SaveImageToAlbumOptions` | 是   | 保存图片配置。 |
+| 参数      | 类型               | 必填 | 说明           |
+| --------- | ------------------ | ---- | -------------- |
+| `options` | `SavePhotoOptions` | 是   | 保存图片配置。 |
 
-`SaveImageToAlbumOptions` 字段：
+`SavePhotoOptions` 字段：
 
-| 字段       | 类型                  | 必填 | 说明                                              |
-| ---------- | --------------------- | ---- | ------------------------------------------------- |
-| `dataUrl`  | `string`              | 是   | 图片 Data URL，例如 `data:image/png;base64,...`。 |
-| `fileName` | `string \| undefined` | 否   | 保存图片名称；系统相册不一定展示该名称。          |
+| 字段  | 类型     | 必填 | 说明                                       |
+| ----- | -------- | ---- | ------------------------------------------ |
+| `url` | `string` | 是   | 图片地址，仅支持 `http://` 和 `https://`。 |
 
 返回值：
 
@@ -370,9 +367,46 @@ tgg.saveImageToAlbum(options: SaveImageToAlbumOptions): Promise<boolean>
 示例：
 
 ```ts
-const saved = await tgg.saveImageToAlbum({
-  fileName: "aaa.jpg",
-  dataUrl: "data:image/png;base64,iVBORw0KGgoAAAA...",
+const saved = await tgg.savePhoto({
+  url: "https://example.com/photo.jpg",
+});
+console.log(saved);
+```
+
+### `tgg.saveVideo(options)`
+
+```ts
+tgg.saveVideo(options: SaveVideoOptions): Promise<boolean>
+```
+
+使用场景：
+
+- 将远程视频保存到系统相册。
+- 适合短视频、录屏结果、本地留存等场景。
+
+参数：
+
+| 参数      | 类型               | 必填 | 说明           |
+| --------- | ------------------ | ---- | -------------- |
+| `options` | `SaveVideoOptions` | 是   | 保存视频配置。 |
+
+`SaveVideoOptions` 字段：
+
+| 字段  | 类型     | 必填 | 说明                                       |
+| ----- | -------- | ---- | ------------------------------------------ |
+| `url` | `string` | 是   | 视频地址，仅支持 `http://` 和 `https://`。 |
+
+返回值：
+
+| 类型               | 说明                                 |
+| ------------------ | ------------------------------------ |
+| `Promise<boolean>` | Native 保存完成后 resolve 保存结果。 |
+
+示例：
+
+```ts
+const saved = await tgg.saveVideo({
+  url: "https://example.com/video.mp4",
 });
 console.log(saved);
 ```
@@ -910,7 +944,8 @@ tgg.canIUse(capability: string): boolean
 | `"getCommunityInfo"`       | 获取社群基础信息。            |
 | `"downloadFile"`           | 下载远程文件。                |
 | `"abortDownloadFile"`      | 取消下载任务。                |
-| `"saveImageToAlbum"`       | 保存图片到系统相册。          |
+| `"savePhoto"`              | 保存图片到系统相册。          |
+| `"saveVideo"`              | 保存视频到系统相册。          |
 | `"themeChanged"`           | 主题变化事件能力。            |
 | `"backButtonClicked"`      | 原生返回按钮点击事件能力。    |
 | `"viewportChanged"`        | viewport 变化事件能力。       |
@@ -1460,7 +1495,8 @@ type MiniAppMethod =
   | "getCommunityInfo"
   | "downloadFile"
   | "abortDownloadFile"
-  | "saveImageToAlbum";
+  | "savePhoto"
+  | "saveVideo";
 ```
 
 ### `TggCapability`

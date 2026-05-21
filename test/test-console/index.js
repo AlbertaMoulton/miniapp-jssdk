@@ -187,22 +187,43 @@ function serializeValue(value, seen = new WeakSet(), depth = 0) {
 }
 
 function serializeError(error) {
-  if (error && typeof error === "object" && "errMsg" in error) {
-    return serializeValue(error);
-  }
+  const serialized =
+    error && typeof error === "object" && "errMsg" in error
+      ? serializeValue(error)
+      : error instanceof Error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack ?? null,
+            ...(error.code ? { code: error.code } : {}),
+          }
+        : {
+            message: typeof error === "string" ? error : "Unknown error",
+            detail: serializeValue(error),
+          };
 
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack ?? null,
-      ...(error.code ? { code: error.code } : {}),
-    };
+  return annotateMiniAppError(serialized);
+}
+
+function annotateMiniAppError(error) {
+  const serialized = serializeValue(error);
+  const message =
+    typeof serialized?.message === "string"
+      ? serialized.message
+      : typeof serialized?.errMsg === "string"
+        ? serialized.errMsg
+        : "";
+  const unknownMethodMatch = message.match(/^Unknown miniapp method: (.+)$/u);
+
+  if (!unknownMethodMatch) {
+    return serialized;
   }
 
   return {
-    message: typeof error === "string" ? error : "Unknown error",
-    detail: serializeValue(error),
+    ...serialized,
+    category: "host_capability_missing",
+    missingMethod: unknownMethodMatch[1],
+    friendlyMessage: `Host runtime does not implement miniapp method: ${unknownMethodMatch[1]}`,
   };
 }
 
@@ -441,7 +462,6 @@ async function startDownloadTask(params) {
     const resolvedUrl = resolveConsoleUrl(params.url);
     const task = runtime.downloadFile({
       url: resolvedUrl,
-      fileName: params.fileName,
       success(result) {
         updateDownloadState("success", {
           progress: 100,
@@ -547,8 +567,10 @@ async function invokeItem(item, params) {
       return await runtime.getCommunityInfo();
     case "downloadFile":
       return await startDownloadTask(params);
-    case "saveImageToAlbum":
-      return await runtime.saveImageToAlbum(params);
+    case "savePhoto":
+      return await runtime.savePhoto(params);
+    case "saveVideo":
+      return await runtime.saveVideo(params);
     case "clipboardTextReceived":
       return {
         listening: true,
@@ -605,6 +627,8 @@ function getApiRuntimeState(item) {
   const isInjected = Boolean(runtime);
   const isDownload = item.id === "downloadFile";
   const isClipboard = item.id === "clipboardTextReceived";
+  const lastError = state.callRecords[item.id]?.error;
+  const hostCapabilityMissing = lastError?.category === "host_capability_missing";
   const capability = getCapabilityName(item);
   const capabilityKnown =
     typeof runtime?.canIUse === "function" ? runtime.canIUse(capability) : null;
@@ -612,11 +636,13 @@ function getApiRuntimeState(item) {
 
   return {
     disabled,
-    disabledReason: !isInjected
-      ? "window.tgg is not injected"
-      : capabilityKnown === false
-        ? `Capability unavailable: ${capability}`
-        : "",
+    disabledReason: hostCapabilityMissing
+      ? lastError?.friendlyMessage ?? "Host runtime does not implement this miniapp method"
+      : !isInjected
+        ? "window.tgg is not injected"
+        : capabilityKnown === false
+          ? `Capability unavailable: ${capability}`
+          : "",
     actionLabel: isClipboard
       ? "Refresh status"
       : item.id === "backButtonBind"
@@ -635,7 +661,9 @@ function getApiRuntimeState(item) {
           ? `task: ${state.downloadTask?.status ?? "idle"} / progress: ${state.downloadTask?.progress ?? 0}%`
           : isClipboard
             ? `last event: ${state.clipboard?.receivedAt ?? "none"}`
-            : "",
+            : hostCapabilityMissing
+              ? `host missing: ${lastError?.missingMethod ?? capability}`
+              : "",
     showAbort: isDownload,
     abortDisabled: state.downloadTask?.status !== "running",
   };
