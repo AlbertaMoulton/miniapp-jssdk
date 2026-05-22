@@ -5,4 +5,4 @@ export const REQUEST_ID_PREFIX = "tgg_req_";
 export const SDK_NOT_INJECTED_MESSAGE =
   "[Teamgaga] window.tgg is not injected. Please run inside Teamgaga App.";
 export const NATIVE_BRIDGE_UNAVAILABLE_MESSAGE = "TeamGaga native bridge is unavailable";
-export const SDK_VERSION = "0.2.0";
+export const SDK_VERSION = "0.2.1";

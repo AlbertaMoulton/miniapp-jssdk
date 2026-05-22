@@ -1,6 +1,6 @@
 {
   "name": "@teamgaga/miniapp-jssdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "TeamGaga MiniApp JavaScript SDK for Flutter WebView containers",
   "keywords": [
     "jssdk",
