@@ -122,6 +122,13 @@ const saved = await tgg.saveVideo({
 console.log(saved);
 ```
 
+Read clipboard text from the Flutter host:
+
+```ts
+const { data } = await tgg.readTextFromClipboard();
+console.log(data);
+```
+
 Listen for clipboard text returned by the Flutter host:
 
 ```ts
@@ -378,6 +385,24 @@ Cancelling a download calls native with:
 ```
 
 ### Clipboard text events
+
+H5 can actively request clipboard text with:
+
+```js
+await window.tgg.readTextFromClipboard();
+```
+
+The host should return a response envelope whose `data` payload looks like:
+
+```json
+{ "data": "copied text" }
+```
+
+If no clipboard text is available, return `{ "data": null }` or omit `data`.
+The SDK will normalize the result to `{ data: null }`.
+
+After `readTextFromClipboard()` resolves, the SDK will also emit
+`clipboardTextReceived` to any active listeners.
 
 Flutter can return clipboard text to H5 with:
 

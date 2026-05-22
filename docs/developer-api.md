@@ -140,6 +140,7 @@ import {
   onSafeAreaChanged,
   onThemeChanged,
   onViewportChanged,
+  readTextFromClipboard,
   setHeaderColor,
 } from "@teamgaga/miniapp-jssdk";
 ```
@@ -417,6 +418,35 @@ console.log(saved);
 
 ## 剪贴板 API
 
+### `tgg.readTextFromClipboard()`
+
+```ts
+tgg.readTextFromClipboard(): Promise<{ data: string | null }>
+```
+
+使用场景：
+
+- 主动请求 TeamGaga App 读取当前剪贴板文本。
+- 适合点击按钮后读取邀请码、口令、分享文案等场景。
+
+返回值：
+
+| 类型                               | 说明                         |
+| ---------------------------------- | ---------------------------- |
+| `Promise<{ data: string \| null }>` | Native 返回的剪贴板文本结果。 |
+
+示例：
+
+```ts
+const { data } = await tgg.readTextFromClipboard();
+console.log(data);
+```
+
+注意：
+
+- 如果 Native 没有读到文本，SDK 会把结果规范化为 `{ data: null }`。
+- `readTextFromClipboard()` 成功 resolve 后，SDK 也会同步触发一次 `clipboardTextReceived` 事件，方便统一复用监听逻辑。
+
 ### `tgg.onClipboardTextReceived(callback)`
 
 ```ts
@@ -428,7 +458,7 @@ tgg.onClipboardTextReceived(
 使用场景：
 
 - 监听 Flutter Host 返回给 H5 的剪贴板文本。
-- 适合 Native 侧已经读取剪贴板，并通过 `window.__tgg_emit("clipboardTextReceived", payload)` 回推结果的场景。
+- 适合监听 `readTextFromClipboard()` 的结果，或接收 Native 侧通过 `window.__tgg_emit("clipboardTextReceived", payload)` 主动回推的结果。
 
 参数：
 
@@ -456,7 +486,7 @@ offClipboard();
 
 - 字段名沿用 Telegram Mini App 的 `data` 习惯。
 - 如果 Host 没有返回文本，SDK 会把回调参数规范化为 `{ data: null }`。
-- 这是事件监听 API，不会主动读取剪贴板；如果后续需要主动读取，可以单独增加读取方法。
+- 这是事件监听 API，本身不会发起 Native 调用；主动读取请使用 `tgg.readTextFromClipboard()`。
 
 ## 环境事件 API
 
@@ -1038,6 +1068,7 @@ tgg.canIUse(capability: string): boolean
 | `"abortDownloadFile"`      | 取消下载任务。                |
 | `"savePhoto"`              | 保存图片到系统相册。          |
 | `"saveVideo"`              | 保存视频到系统相册。          |
+| `"readTextFromClipboard"`  | 主动读取剪贴板文本。          |
 | `"themeChanged"`           | 主题变化事件能力。            |
 | `"backButtonClicked"`      | 原生返回按钮点击事件能力。    |
 | `"viewportChanged"`        | viewport 变化事件能力。       |
@@ -1343,6 +1374,22 @@ controller.evaluateJavascript(
   source: 'window.__tgg_emit("downloadFileFail", {"taskId":"tgg_download_1","errMsg":"download failed"})',
 );
 ```
+
+主动读取剪贴板示例：
+
+```js
+const result = await window.tgg.readTextFromClipboard();
+console.log(result.data);
+```
+
+如果 Flutter Host 直接返回：
+
+```json
+{ "data": "copied text" }
+```
+
+SDK 会把结果规范化为 `{ data: string | null }`，并在 Promise resolve 后额外触发一次
+`clipboardTextReceived`。
 
 剪贴板事件示例：
 
