@@ -7,6 +7,7 @@ import type {
   ClipboardTextReceivedCallback,
   ClipboardTextReceivedResult,
   CommunityInfo,
+  ContentSafeAreaChangedCallback,
   DownloadFileCompleteResult,
   DownloadFileFailResult,
   DownloadFileOptions,
@@ -17,23 +18,41 @@ import type {
   MiniAppMethod,
   MiniAppSDK,
   MiniAppSDKOptions,
+  SafeAreaChangedCallback,
   SavePhotoOptions,
   SaveVideoOptions,
   SystemInfo,
+  ThemeChangedCallback,
+  ThemeChangedPayload,
   UserInfo,
   TggEventName,
   TggHeaderColor,
   TggWebApp,
+  TggColorScheme,
+  ThemeParams,
+  ViewportChangedCallback,
+  ViewportChangedPayload,
+  SafeAreaInset,
 } from "./types";
 
 const BACK_BUTTON_CLICKED_EVENT: TggEventName = "backButtonClicked";
 const CLIPBOARD_TEXT_RECEIVED_EVENT: TggEventName = "clipboardTextReceived";
+const THEME_CHANGED_EVENT: TggEventName = "themeChanged";
+const VIEWPORT_CHANGED_EVENT: TggEventName = "viewportChanged";
+const SAFE_AREA_CHANGED_EVENT: TggEventName = "safeAreaChanged";
+const CONTENT_SAFE_AREA_CHANGED_EVENT: TggEventName = "contentSafeAreaChanged";
 const DOWNLOAD_ABORT_MESSAGE = "downloadFile:abort";
 const DOWNLOAD_OK_MESSAGE = "downloadFile:ok";
 const DOWNLOAD_URL_ERROR_MESSAGE = "downloadFile:fail invalid url";
 const BACK_BUTTON_HANDLER_ERROR_MESSAGE = "[Teamgaga] BackButton.onClick handler failed";
 const INVALID_HEADER_COLOR_CODE = "INVALID_HEADER_COLOR";
 const UNSUPPORTED_CAPABILITY_CODE = "UNSUPPORTED_CAPABILITY";
+const DEFAULT_SAFE_AREA_INSET: SafeAreaInset = {
+  top: 0,
+  right: 0,
+  bottom: 0,
+  left: 0,
+};
 
 export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "init" },
@@ -259,6 +278,52 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     };
   };
 
+  const onThemeChanged = (callback: ThemeChangedCallback): (() => void) => {
+    const handler = (payload?: unknown): void => {
+      callback(getThemeChangedPayload(payload));
+    };
+
+    onEvent(THEME_CHANGED_EVENT, handler);
+    return () => {
+      offEvent(THEME_CHANGED_EVENT, handler);
+    };
+  };
+
+  const onViewportChanged = (callback: ViewportChangedCallback): (() => void) => {
+    const handler = (payload?: unknown): void => {
+      callback(getViewportChangedPayload(payload));
+    };
+
+    onEvent(VIEWPORT_CHANGED_EVENT, handler);
+    return () => {
+      offEvent(VIEWPORT_CHANGED_EVENT, handler);
+    };
+  };
+
+  const onSafeAreaChanged = (callback: SafeAreaChangedCallback): (() => void) => {
+    const handler = (payload?: unknown): void => {
+      callback(getSafeAreaInsetPayload(payload));
+    };
+
+    onEvent(SAFE_AREA_CHANGED_EVENT, handler);
+    return () => {
+      offEvent(SAFE_AREA_CHANGED_EVENT, handler);
+    };
+  };
+
+  const onContentSafeAreaChanged = (
+    callback: ContentSafeAreaChangedCallback,
+  ): (() => void) => {
+    const handler = (payload?: unknown): void => {
+      callback(getSafeAreaInsetPayload(payload));
+    };
+
+    onEvent(CONTENT_SAFE_AREA_CHANGED_EVENT, handler);
+    return () => {
+      offEvent(CONTENT_SAFE_AREA_CHANGED_EVENT, handler);
+    };
+  };
+
   const receiveDownloadFileProgress = (payload: unknown): void => {
     const taskId = getStringValue(payload, "taskId");
     const progress = getNumberValue(payload, "progress");
@@ -331,6 +396,10 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     savePhoto: (options: SavePhotoOptions) => invoke<boolean>("savePhoto", options),
     saveVideo: (options: SaveVideoOptions) => invoke<boolean>("saveVideo", options),
     onClipboardTextReceived,
+    onThemeChanged,
+    onViewportChanged,
+    onSafeAreaChanged,
+    onContentSafeAreaChanged,
     receiveEvent,
     BackButton: {
       get isVisible() {
@@ -392,6 +461,49 @@ const getClipboardTextReceivedResult = (payload: unknown): ClipboardTextReceived
   };
 };
 
+const getThemeChangedPayload = (payload: unknown): ThemeChangedPayload => {
+  if (!isRecord(payload)) {
+    return {
+      colorScheme: "light",
+      themeParams: {},
+    };
+  }
+
+  return {
+    colorScheme: getColorScheme(payload.colorScheme) ?? "light",
+    themeParams: getThemeParams(payload.themeParams),
+    headerColor: getStringValue(payload, "headerColor"),
+    backgroundColor: getStringValue(payload, "backgroundColor"),
+  };
+};
+
+const getViewportChangedPayload = (payload: unknown): ViewportChangedPayload => {
+  if (!isRecord(payload)) {
+    return {
+      height: 0,
+      stableHeight: 0,
+    };
+  }
+
+  return {
+    height: getNumberValue(payload, "height") ?? 0,
+    stableHeight: getNumberValue(payload, "stableHeight") ?? 0,
+  };
+};
+
+const getSafeAreaInsetPayload = (payload: unknown): SafeAreaInset => {
+  if (!isRecord(payload)) {
+    return { ...DEFAULT_SAFE_AREA_INSET };
+  }
+
+  return {
+    top: getNumberValue(payload, "top") ?? 0,
+    right: getNumberValue(payload, "right") ?? 0,
+    bottom: getNumberValue(payload, "bottom") ?? 0,
+    left: getNumberValue(payload, "left") ?? 0,
+  };
+};
+
 const getDownloadFileValidationError = (options: DownloadFileOptions): string | undefined => {
   if (!isHttpUrl(options.url)) {
     return DOWNLOAD_URL_ERROR_MESSAGE;
@@ -421,6 +533,19 @@ const getNumberValue = (payload: unknown, key: string): number | undefined => {
   const value = payload[key];
   return typeof value === "number" ? value : undefined;
 };
+
+const getThemeParams = (payload: unknown): ThemeParams => {
+  if (!isRecord(payload)) {
+    return {};
+  }
+
+  return Object.fromEntries(
+    Object.entries(payload).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+  );
+};
+
+const getColorScheme = (value: unknown): TggColorScheme | undefined =>
+  value === "light" || value === "dark" ? value : undefined;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -491,3 +616,16 @@ export const getCommunityInfo = (): Promise<CommunityInfo> => getTgg().getCommun
 
 export const setHeaderColor = (color: TggHeaderColor): Promise<void> =>
   getTgg().setHeaderColor(color);
+
+export const onThemeChanged = (callback: ThemeChangedCallback): (() => void) =>
+  getTgg().onThemeChanged(callback);
+
+export const onViewportChanged = (callback: ViewportChangedCallback): (() => void) =>
+  getTgg().onViewportChanged(callback);
+
+export const onSafeAreaChanged = (callback: SafeAreaChangedCallback): (() => void) =>
+  getTgg().onSafeAreaChanged(callback);
+
+export const onContentSafeAreaChanged = (
+  callback: ContentSafeAreaChangedCallback,
+): (() => void) => getTgg().onContentSafeAreaChanged(callback);

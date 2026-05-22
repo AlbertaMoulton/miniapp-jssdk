@@ -133,6 +133,31 @@ const offClipboard = tgg.onClipboardTextReceived(({ data }) => {
 offClipboard();
 ```
 
+Listen for Telegram-style environment changes with typed payloads:
+
+```ts
+const offTheme = tgg.onThemeChanged(({ colorScheme, themeParams }) => {
+  console.log(colorScheme, themeParams.bg_color);
+});
+
+const offViewport = tgg.onViewportChanged(({ height, stableHeight }) => {
+  console.log(height, stableHeight);
+});
+
+const offSafeArea = tgg.onSafeAreaChanged((inset) => {
+  console.log(inset.bottom);
+});
+
+const offContentSafeArea = tgg.onContentSafeAreaChanged((inset) => {
+  console.log(inset.bottom);
+});
+
+offTheme();
+offViewport();
+offSafeArea();
+offContentSafeArea();
+```
+
 For explicit access:
 
 ```ts

@@ -36,6 +36,33 @@ const GROUP_CONTAINER_IDS = {
 };
 
 const LOG_LIMIT = 200;
+const EVENT_API_CONFIG = {
+  themeChanged: {
+    subscribe(runtime, callback) {
+      return runtime.onThemeChanged(callback);
+    },
+  },
+  viewportChanged: {
+    subscribe(runtime, callback) {
+      return runtime.onViewportChanged(callback);
+    },
+  },
+  safeAreaChanged: {
+    subscribe(runtime, callback) {
+      return runtime.onSafeAreaChanged(callback);
+    },
+  },
+  contentSafeAreaChanged: {
+    subscribe(runtime, callback) {
+      return runtime.onContentSafeAreaChanged(callback);
+    },
+  },
+  clipboardTextReceived: {
+    subscribe(runtime, callback) {
+      return runtime.onClipboardTextReceived(callback);
+    },
+  },
+};
 
 function resolveConsoleUrl(value) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -74,6 +101,8 @@ const state = {
   backButtonClicks: 0,
   boundBackButtonHandler: null,
   clipboard: null,
+  eventSubscriptions: {},
+  eventPayloads: {},
   downloadTask: null,
   safeAreaMode: {
     height: "viewport",
@@ -277,6 +306,12 @@ function getCapabilityName(item) {
     case "backButtonBind":
     case "backButtonUnbind":
       return "backButtonClicked";
+    case "themeChanged":
+    case "viewportChanged":
+    case "safeAreaChanged":
+    case "contentSafeAreaChanged":
+    case "clipboardTextReceived":
+      return item.id;
     default:
       return item.title;
   }
@@ -372,6 +407,26 @@ function updateClipboardRecord(payload) {
     finishedAt: Date.now(),
     status: "success",
     result: state.clipboard,
+  });
+}
+
+function updateEventRecord(itemId, payload) {
+  const receivedAt = new Date().toISOString();
+
+  state.eventPayloads[itemId] = {
+    receivedAt,
+    payload: serializeValue(payload),
+  };
+  state.callRecords[itemId] = buildCallRecord({
+    name: EVENT_API_CONFIG[itemId] ? `on${itemId[0].toUpperCase()}${itemId.slice(1)}` : itemId,
+    params: null,
+    startedAt: Date.now(),
+    finishedAt: Date.now(),
+    status: "success",
+    result: {
+      listening: true,
+      latest: state.eventPayloads[itemId],
+    },
   });
 }
 
@@ -558,11 +613,31 @@ async function invokeItem(item, params) {
       return await runtime.savePhoto(params);
     case "saveVideo":
       return await runtime.saveVideo(params);
-    case "clipboardTextReceived":
+    case "themeChanged":
+    case "viewportChanged":
+    case "safeAreaChanged":
+    case "contentSafeAreaChanged":
+    case "clipboardTextReceived": {
+      if (!state.eventSubscriptions[item.id]) {
+        const unsubscribe = EVENT_API_CONFIG[item.id].subscribe(runtime, (payload) => {
+          updateEventRecord(item.id, payload);
+          pushLog("system", "info", `${item.title} callback invoked`, payload);
+          refreshAll();
+        });
+
+        state.eventSubscriptions[item.id] = {
+          active: true,
+          unsubscribe,
+          subscribedAt: new Date().toISOString(),
+        };
+      }
+
       return {
         listening: true,
-        latest: state.clipboard,
+        subscribedAt: state.eventSubscriptions[item.id]?.subscribedAt ?? null,
+        latest: state.eventPayloads[item.id] ?? null,
       };
+    }
     default:
       throw new Error(`Unsupported API item: ${item.id}`);
   }
@@ -613,7 +688,7 @@ function getApiRuntimeState(item) {
   const runtime = getRuntime();
   const isInjected = Boolean(runtime);
   const isDownload = item.id === "downloadFile";
-  const isClipboard = item.id === "clipboardTextReceived";
+  const isEvent = item.kind === "event";
   const lastError = state.callRecords[item.id]?.error;
   const hostCapabilityMissing = lastError?.category === "host_capability_missing";
   const capability = getCapabilityName(item);
@@ -630,8 +705,8 @@ function getApiRuntimeState(item) {
         : capabilityKnown === false
           ? `Capability unavailable: ${capability}`
           : "",
-    actionLabel: isClipboard
-      ? "Refresh status"
+    actionLabel: isEvent
+      ? "Bind listener"
       : item.id === "backButtonBind"
         ? "Bind"
         : item.id === "backButtonUnbind"
@@ -640,14 +715,16 @@ function getApiRuntimeState(item) {
     boundLabel:
       item.id === "backButtonBind" || item.id === "backButtonUnbind"
         ? `listener: ${state.boundBackButtonHandler ? "bound" : "idle"}`
+        : isEvent
+          ? `listener: ${state.eventSubscriptions[item.id]?.active ? "bound" : "idle"}`
         : "",
     extraLabel:
       item.id === "backButtonBind" || item.id === "backButtonUnbind"
         ? `clicks: ${state.backButtonClicks} / visible: ${runtime?.BackButton?.isVisible ? "yes" : "no"}`
-        : isDownload
-          ? `task: ${state.downloadTask?.status ?? "idle"} / progress: ${state.downloadTask?.progress ?? 0}%`
-          : isClipboard
-            ? `last event: ${state.clipboard?.receivedAt ?? "none"}`
+          : isDownload
+            ? `task: ${state.downloadTask?.status ?? "idle"} / progress: ${state.downloadTask?.progress ?? 0}%`
+          : isEvent
+            ? `last event: ${state.eventPayloads[item.id]?.receivedAt ?? "none"}`
             : hostCapabilityMissing
               ? `host missing: ${lastError?.missingMethod ?? capability}`
               : "",

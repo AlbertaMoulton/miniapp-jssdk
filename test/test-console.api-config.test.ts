@@ -27,6 +27,10 @@ test("covers all approved P0 P1 P2 api items", () => {
     "downloadFile",
     "savePhoto",
     "saveVideo",
+    "themeChanged",
+    "viewportChanged",
+    "safeAreaChanged",
+    "contentSafeAreaChanged",
     "clipboardTextReceived",
   ]);
 });

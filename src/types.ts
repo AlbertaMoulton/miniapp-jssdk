@@ -168,6 +168,26 @@ export type ClipboardTextReceivedResult = {
 
 export type ClipboardTextReceivedCallback = (res: ClipboardTextReceivedResult) => void;
 
+export type ThemeChangedPayload = {
+  colorScheme: TggColorScheme;
+  themeParams: ThemeParams;
+  headerColor?: string;
+  backgroundColor?: string;
+};
+
+export type ThemeChangedCallback = (payload: ThemeChangedPayload) => void;
+
+export type ViewportChangedPayload = {
+  height: number;
+  stableHeight: number;
+};
+
+export type ViewportChangedCallback = (payload: ViewportChangedPayload) => void;
+
+export type SafeAreaChangedCallback = (payload: SafeAreaInset) => void;
+
+export type ContentSafeAreaChangedCallback = (payload: SafeAreaInset) => void;
+
 export type MiniAppSDK = {
   invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
   canIUse(capability: string): boolean;
@@ -188,6 +208,10 @@ export type MiniAppSDK = {
   savePhoto(options: SavePhotoOptions): Promise<boolean>;
   saveVideo(options: SaveVideoOptions): Promise<boolean>;
   onClipboardTextReceived(callback: ClipboardTextReceivedCallback): () => void;
+  onThemeChanged(callback: ThemeChangedCallback): () => void;
+  onViewportChanged(callback: ViewportChangedCallback): () => void;
+  onSafeAreaChanged(callback: SafeAreaChangedCallback): () => void;
+  onContentSafeAreaChanged(callback: ContentSafeAreaChangedCallback): () => void;
   BackButton: TggBackButton;
   receiveEvent(eventName: TggEventName, payload?: unknown): void;
 };

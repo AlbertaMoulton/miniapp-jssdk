@@ -62,5 +62,14 @@ export const API_ITEMS = [
       url: "https://d22wqdtjjmo1wy.cloudfront.net/attachments/4d9e1e7737e2d05cb38558d6f742024b.mp4",
     },
   },
+  { id: "themeChanged", group: "device", title: "onThemeChanged", kind: "event" },
+  { id: "viewportChanged", group: "device", title: "onViewportChanged", kind: "event" },
+  { id: "safeAreaChanged", group: "device", title: "onSafeAreaChanged", kind: "event" },
+  {
+    id: "contentSafeAreaChanged",
+    group: "device",
+    title: "onContentSafeAreaChanged",
+    kind: "event",
+  },
   { id: "clipboardTextReceived", group: "device", title: "clipboardTextReceived", kind: "event" },
 ];

@@ -526,6 +526,106 @@ test("onClipboardTextReceived normalizes missing clipboard data to null", () => 
   expect(handler).toHaveBeenCalledWith({ data: null });
 });
 
+test("onThemeChanged receives normalized theme payload and returns an unsubscribe handler", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  const off = sdk.onThemeChanged(handler);
+  sdk.receiveEvent("themeChanged", {
+    colorScheme: "dark",
+    themeParams: {
+      bg_color: "#101010",
+      text_color: "#ffffff",
+      ignored: 1,
+    },
+    headerColor: "#123456",
+    backgroundColor: "#654321",
+  });
+  off();
+  sdk.receiveEvent("themeChanged", {
+    colorScheme: "light",
+  });
+
+  expect(handler).toHaveBeenCalledOnce();
+  expect(handler).toHaveBeenCalledWith({
+    colorScheme: "dark",
+    themeParams: {
+      bg_color: "#101010",
+      text_color: "#ffffff",
+    },
+    headerColor: "#123456",
+    backgroundColor: "#654321",
+  });
+});
+
+test("onViewportChanged normalizes missing viewport fields to zero", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  sdk.onViewportChanged(handler);
+  sdk.receiveEvent("viewportChanged", {
+    height: 720,
+  });
+  sdk.receiveEvent("viewportChanged", {});
+
+  expect(handler).toHaveBeenNthCalledWith(1, {
+    height: 720,
+    stableHeight: 0,
+  });
+  expect(handler).toHaveBeenNthCalledWith(2, {
+    height: 0,
+    stableHeight: 0,
+  });
+});
+
+test("onSafeAreaChanged normalizes invalid payloads to empty insets", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  sdk.onSafeAreaChanged(handler);
+  sdk.receiveEvent("safeAreaChanged", {
+    top: 10,
+    right: 11,
+    bottom: 12,
+    left: 13,
+  });
+  sdk.receiveEvent("safeAreaChanged", null);
+
+  expect(handler).toHaveBeenNthCalledWith(1, {
+    top: 10,
+    right: 11,
+    bottom: 12,
+    left: 13,
+  });
+  expect(handler).toHaveBeenNthCalledWith(2, {
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  });
+});
+
+test("onContentSafeAreaChanged receives normalized content safe area payload", () => {
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+
+  sdk.onContentSafeAreaChanged(handler);
+  sdk.receiveEvent("contentSafeAreaChanged", {
+    top: 1,
+    right: 2,
+    bottom: 3,
+    left: 4,
+  });
+
+  expect(handler).toHaveBeenCalledOnce();
+  expect(handler).toHaveBeenCalledWith({
+    top: 1,
+    right: 2,
+    bottom: 3,
+    left: 4,
+  });
+});
+
 test("generic onEvent can observe clipboardTextReceived events", () => {
   const sdk = createMiniAppSDK();
   const handler = vi.fn();

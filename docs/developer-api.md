@@ -136,6 +136,10 @@ import {
   getSystemInfo,
   getUserId,
   getUserInfo,
+  onContentSafeAreaChanged,
+  onSafeAreaChanged,
+  onThemeChanged,
+  onViewportChanged,
   setHeaderColor,
 } from "@teamgaga/miniapp-jssdk";
 ```
@@ -453,6 +457,94 @@ offClipboard();
 - 字段名沿用 Telegram Mini App 的 `data` 习惯。
 - 如果 Host 没有返回文本，SDK 会把回调参数规范化为 `{ data: null }`。
 - 这是事件监听 API，不会主动读取剪贴板；如果后续需要主动读取，可以单独增加读取方法。
+
+## 环境事件 API
+
+这组 API 参考 Telegram Mini Apps 的环境事件模型，但做了两点工程化收口：
+
+- 统一返回 `() => void` 解绑函数，便于在 React `useEffect`、Vue `onUnmounted` 里直接清理。
+- 回调参数是规范化后的稳定结构，业务层不需要自己判断字段是否缺失。
+
+### `tgg.onThemeChanged(callback)`
+
+```ts
+tgg.onThemeChanged(
+  callback: (payload: {
+    colorScheme: "light" | "dark";
+    themeParams: Record<string, string>;
+    headerColor?: string;
+    backgroundColor?: string;
+  }) => void,
+): () => void
+```
+
+使用场景：
+
+- 监听宿主主题变化。
+- 在暗黑模式切换时同步页面配色。
+
+示例：
+
+```ts
+const offTheme = tgg.onThemeChanged(({ colorScheme, themeParams }) => {
+  document.body.dataset.theme = colorScheme;
+  console.log(themeParams.bg_color);
+});
+```
+
+### `tgg.onViewportChanged(callback)`
+
+```ts
+tgg.onViewportChanged(
+  callback: (payload: { height: number; stableHeight: number }) => void,
+): () => void
+```
+
+使用场景：
+
+- 监听可用 viewport 高度变化。
+- 适配键盘弹起、底部容器伸缩或宿主布局变化。
+
+示例：
+
+```ts
+const offViewport = tgg.onViewportChanged(({ height, stableHeight }) => {
+  console.log(height, stableHeight);
+});
+```
+
+### `tgg.onSafeAreaChanged(callback)`
+
+```ts
+tgg.onSafeAreaChanged(
+  callback: (payload: { top: number; right: number; bottom: number; left: number }) => void,
+): () => void
+```
+
+使用场景：
+
+- 监听宿主安全区变化。
+- 适配刘海、底部 Home Indicator 或横竖屏切换。
+
+### `tgg.onContentSafeAreaChanged(callback)`
+
+```ts
+tgg.onContentSafeAreaChanged(
+  callback: (payload: { top: number; right: number; bottom: number; left: number }) => void,
+): () => void
+```
+
+使用场景：
+
+- 监听内容区域安全区变化。
+- 适合页面自身有 fixed footer、沉浸式内容区时使用。
+
+注意：
+
+- `themeParams` 只保留字符串值，其他异常字段会被过滤掉。
+- `viewportChanged` 缺失字段会规范化为 `0`。
+- `safeAreaChanged` 和 `contentSafeAreaChanged` 缺失字段会规范化为 `0`。
+- 这些 API 是 `themeChanged`、`viewportChanged`、`safeAreaChanged`、`contentSafeAreaChanged` 的语义化封装；如需更底层能力，仍可使用 `tgg.onEvent(...)`。
 
 ## 导航栏 API
 
