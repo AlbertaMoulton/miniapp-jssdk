@@ -14,7 +14,8 @@ export type MiniAppMethod =
   | "downloadFile"
   | "abortDownloadFile"
   | "savePhoto"
-  | "saveVideo";
+  | "saveVideo"
+  | "readTextFromClipboard";
 
 export type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
 
@@ -207,6 +208,7 @@ export type MiniAppSDK = {
   downloadFile(options: DownloadFileOptions): DownloadTask;
   savePhoto(options: SavePhotoOptions): Promise<boolean>;
   saveVideo(options: SaveVideoOptions): Promise<boolean>;
+  readTextFromClipboard(): Promise<ClipboardTextReceivedResult>;
   onClipboardTextReceived(callback: ClipboardTextReceivedCallback): () => void;
   onThemeChanged(callback: ThemeChangedCallback): () => void;
   onViewportChanged(callback: ViewportChangedCallback): () => void;

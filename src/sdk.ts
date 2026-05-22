@@ -71,6 +71,7 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "abortDownloadFile" },
   { name: "savePhoto" },
   { name: "saveVideo" },
+  { name: "readTextFromClipboard" },
   { name: "themeChanged" },
   { name: "backButtonClicked" },
   { name: "viewportChanged" },
@@ -100,6 +101,7 @@ export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
   "abortDownloadFile",
   "savePhoto",
   "saveVideo",
+  "readTextFromClipboard",
 ];
 
 type DownloadTaskState = {
@@ -278,6 +280,14 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     };
   };
 
+  const readTextFromClipboard = async (): Promise<ClipboardTextReceivedResult> => {
+    const result = getClipboardTextReceivedResult(
+      await invoke<ClipboardTextReceivedResult>("readTextFromClipboard"),
+    );
+    emitEvent(CLIPBOARD_TEXT_RECEIVED_EVENT, result);
+    return result;
+  };
+
   const onThemeChanged = (callback: ThemeChangedCallback): (() => void) => {
     const handler = (payload?: unknown): void => {
       callback(getThemeChangedPayload(payload));
@@ -393,6 +403,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     downloadFile,
     savePhoto: (options: SavePhotoOptions) => invoke<boolean>("savePhoto", options),
     saveVideo: (options: SaveVideoOptions) => invoke<boolean>("saveVideo", options),
+    readTextFromClipboard,
     onClipboardTextReceived,
     onThemeChanged,
     onViewportChanged,
@@ -616,6 +627,9 @@ export const getCommunityInfo = (): Promise<CommunityInfo> => getTgg().getCommun
 
 export const setHeaderColor = (color: TggHeaderColor): Promise<void> =>
   getTgg().setHeaderColor(color);
+
+export const readTextFromClipboard = (): Promise<ClipboardTextReceivedResult> =>
+  getTgg().readTextFromClipboard();
 
 export const onThemeChanged = (callback: ThemeChangedCallback): (() => void) =>
   getTgg().onThemeChanged(callback);

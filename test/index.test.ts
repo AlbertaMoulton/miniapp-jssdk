@@ -8,6 +8,7 @@ import {
   getCommunityId,
   getCommunityInfo,
   getOauthCode,
+  readTextFromClipboard,
   getSystemInfo,
   getTgg,
   getUserId,
@@ -348,6 +349,44 @@ test("getCommunityInfo resolves directly through native bridge", async () => {
   expect(calls.map((call) => call.payload.method)).toEqual(["getCommunityInfo"]);
 });
 
+test("readTextFromClipboard resolves normalized clipboard data and emits the event", async () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler(_handlerName: string, payload: unknown) {
+      const request = payload as Record<string, unknown>;
+      expect(request.method).toBe("readTextFromClipboard");
+      return {
+        success: true,
+        data: {
+          data: "copied text",
+        },
+      };
+    },
+  } satisfies TestFlutterBridge;
+
+  const sdk = createMiniAppSDK();
+  const handler = vi.fn();
+  sdk.onClipboardTextReceived(handler);
+
+  await expect(sdk.readTextFromClipboard()).resolves.toEqual({ data: "copied text" });
+  expect(handler).toHaveBeenCalledOnce();
+  expect(handler).toHaveBeenCalledWith({ data: "copied text" });
+});
+
+test("readTextFromClipboard normalizes missing clipboard text to null", async () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return {
+        success: true,
+        data: {},
+      };
+    },
+  } satisfies TestFlutterBridge;
+
+  const sdk = createMiniAppSDK();
+
+  await expect(sdk.readTextFromClipboard()).resolves.toEqual({ data: null });
+});
+
 test("exposes all known miniapp API helper methods", () => {
   expect(getOauthCode).toEqual(expect.any(Function));
   expect(getUserId).toEqual(expect.any(Function));
@@ -355,6 +394,7 @@ test("exposes all known miniapp API helper methods", () => {
   expect(getSystemInfo).toEqual(expect.any(Function));
   expect(getCommunityId).toEqual(expect.any(Function));
   expect(getCommunityInfo).toEqual(expect.any(Function));
+  expect(readTextFromClipboard).toEqual(expect.any(Function));
   expect(setHeaderColor).toEqual(expect.any(Function));
 });
 
@@ -1380,5 +1420,6 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
     "abortDownloadFile",
     "savePhoto",
     "saveVideo",
+    "readTextFromClipboard",
   ]);
 });

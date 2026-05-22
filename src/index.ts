@@ -5,6 +5,7 @@ export {
   getCommunityId,
   getCommunityInfo,
   getOauthCode,
+  readTextFromClipboard,
   getSystemInfo,
   getUserId,
   getUserInfo,
