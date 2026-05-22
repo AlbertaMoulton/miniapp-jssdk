@@ -717,12 +717,12 @@ function getApiRuntimeState(item) {
         ? `listener: ${state.boundBackButtonHandler ? "bound" : "idle"}`
         : isEvent
           ? `listener: ${state.eventSubscriptions[item.id]?.active ? "bound" : "idle"}`
-        : "",
+          : "",
     extraLabel:
       item.id === "backButtonBind" || item.id === "backButtonUnbind"
         ? `clicks: ${state.backButtonClicks} / visible: ${runtime?.BackButton?.isVisible ? "yes" : "no"}`
-          : isDownload
-            ? `task: ${state.downloadTask?.status ?? "idle"} / progress: ${state.downloadTask?.progress ?? 0}%`
+        : isDownload
+          ? `task: ${state.downloadTask?.status ?? "idle"} / progress: ${state.downloadTask?.progress ?? 0}%`
           : isEvent
             ? `last event: ${state.eventPayloads[item.id]?.receivedAt ?? "none"}`
             : hostCapabilityMissing

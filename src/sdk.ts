@@ -311,9 +311,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     };
   };
 
-  const onContentSafeAreaChanged = (
-    callback: ContentSafeAreaChangedCallback,
-  ): (() => void) => {
+  const onContentSafeAreaChanged = (callback: ContentSafeAreaChangedCallback): (() => void) => {
     const handler = (payload?: unknown): void => {
       callback(getSafeAreaInsetPayload(payload));
     };
@@ -540,7 +538,9 @@ const getThemeParams = (payload: unknown): ThemeParams => {
   }
 
   return Object.fromEntries(
-    Object.entries(payload).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+    Object.entries(payload).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
   );
 };
 
@@ -626,6 +626,5 @@ export const onViewportChanged = (callback: ViewportChangedCallback): (() => voi
 export const onSafeAreaChanged = (callback: SafeAreaChangedCallback): (() => void) =>
   getTgg().onSafeAreaChanged(callback);
 
-export const onContentSafeAreaChanged = (
-  callback: ContentSafeAreaChangedCallback,
-): (() => void) => getTgg().onContentSafeAreaChanged(callback);
+export const onContentSafeAreaChanged = (callback: ContentSafeAreaChangedCallback): (() => void) =>
+  getTgg().onContentSafeAreaChanged(callback);
