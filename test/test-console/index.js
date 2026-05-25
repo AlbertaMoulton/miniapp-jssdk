@@ -36,33 +36,6 @@ const GROUP_CONTAINER_IDS = {
 };
 
 const LOG_LIMIT = 200;
-const EVENT_API_CONFIG = {
-  themeChanged: {
-    subscribe(runtime, callback) {
-      return runtime.onThemeChanged(callback);
-    },
-  },
-  viewportChanged: {
-    subscribe(runtime, callback) {
-      return runtime.onViewportChanged(callback);
-    },
-  },
-  safeAreaChanged: {
-    subscribe(runtime, callback) {
-      return runtime.onSafeAreaChanged(callback);
-    },
-  },
-  contentSafeAreaChanged: {
-    subscribe(runtime, callback) {
-      return runtime.onContentSafeAreaChanged(callback);
-    },
-  },
-  clipboardTextReceived: {
-    subscribe(runtime, callback) {
-      return runtime.onClipboardTextReceived(callback);
-    },
-  },
-};
 
 function resolveConsoleUrl(value) {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -305,12 +278,15 @@ function getCapabilityName(item) {
       return "BackButton.hide";
     case "backButtonBind":
     case "backButtonUnbind":
-      return "backButtonClicked";
-    case "themeChanged":
-    case "viewportChanged":
-    case "safeAreaChanged":
-    case "contentSafeAreaChanged":
-    case "clipboardTextReceived":
+      return "back_button_clicked";
+    case "activated":
+    case "deactivated":
+    case "theme_changed":
+    case "viewport_changed":
+    case "safe_area_changed":
+    case "content_safe_area_changed":
+    case "fullscreen_failed":
+    case "clipboard_text_received":
       return item.id;
     default:
       return item.title;
@@ -400,8 +376,8 @@ function updateClipboardRecord(payload) {
     receivedAt,
     payload: serializeValue(payload),
   };
-  state.callRecords.clipboardTextReceived = buildCallRecord({
-    name: "clipboardTextReceived",
+  state.callRecords.clipboard_text_received = buildCallRecord({
+    name: "clipboard_text_received",
     params: null,
     startedAt: Date.now(),
     finishedAt: Date.now(),
@@ -418,7 +394,7 @@ function updateEventRecord(itemId, payload) {
     payload: serializeValue(payload),
   };
   state.callRecords[itemId] = buildCallRecord({
-    name: EVENT_API_CONFIG[itemId] ? `on${itemId[0].toUpperCase()}${itemId.slice(1)}` : itemId,
+    name: itemId,
     params: null,
     startedAt: Date.now(),
     finishedAt: Date.now(),
@@ -439,29 +415,29 @@ function updateDownloadState(status, patch = {}) {
 }
 
 function applyRuntimeEvent(eventName, payload) {
-  if (eventName === "backButtonClicked") {
+  if (eventName === "back_button_clicked") {
     state.backButtonClicks += 1;
   }
 
-  if (eventName === "clipboardTextReceived") {
+  if (eventName === "clipboard_text_received") {
     updateClipboardRecord(payload);
   }
 
-  if (eventName === "downloadFileProgress") {
+  if (eventName === "download_file_progress") {
     updateDownloadState("running", {
       progress: payload?.progress ?? state.downloadTask?.progress ?? 0,
       progressPayload: serializeValue(payload),
     });
   }
 
-  if (eventName === "downloadFileSuccess") {
+  if (eventName === "download_file_success") {
     updateDownloadState("success", {
       progress: 100,
       successPayload: serializeValue(payload),
     });
   }
 
-  if (eventName === "downloadFileFail") {
+  if (eventName === "download_file_fail") {
     updateDownloadState("error", {
       errorPayload: serializeValue(payload),
     });
@@ -613,21 +589,25 @@ async function invokeItem(item, params) {
       return await runtime.savePhoto(params);
     case "saveVideo":
       return await runtime.saveVideo(params);
-    case "themeChanged":
-    case "viewportChanged":
-    case "safeAreaChanged":
-    case "contentSafeAreaChanged":
-    case "clipboardTextReceived": {
+    case "activated":
+    case "deactivated":
+    case "theme_changed":
+    case "viewport_changed":
+    case "safe_area_changed":
+    case "content_safe_area_changed":
+    case "fullscreen_failed":
+    case "clipboard_text_received": {
       if (!state.eventSubscriptions[item.id]) {
-        const unsubscribe = EVENT_API_CONFIG[item.id].subscribe(runtime, (payload) => {
+        const callback = (payload) => {
           updateEventRecord(item.id, payload);
           pushLog("system", "info", `${item.title} callback invoked`, payload);
           refreshAll();
-        });
+        };
 
+        runtime.onEvent(item.id, callback);
         state.eventSubscriptions[item.id] = {
           active: true,
-          unsubscribe,
+          unsubscribe: () => runtime.offEvent(item.id, callback),
           subscribedAt: new Date().toISOString(),
         };
       }

@@ -132,37 +132,30 @@ console.log(data);
 Listen for clipboard text returned by the Flutter host:
 
 ```ts
-const offClipboard = tgg.onClipboardTextReceived(({ data }) => {
+const onClipboard = ({ data }: { data: string | null }) => {
   console.log(data);
-});
+};
 
-// Remove the listener when the page no longer needs it.
-offClipboard();
+tgg.onEvent("clipboard_text_received", onClipboard);
+tgg.offEvent("clipboard_text_received", onClipboard);
 ```
 
-Listen for Telegram-style environment changes with typed payloads:
+Listen for Telegram-style environment changes:
 
 ```ts
-const offTheme = tgg.onThemeChanged(({ colorScheme, themeParams }) => {
-  console.log(colorScheme, themeParams.bg_color);
-});
+const onThemeChanged = () => {
+  console.log(tgg.colorScheme, tgg.themeParams.bg_color);
+};
 
-const offViewport = tgg.onViewportChanged(({ height, stableHeight }) => {
-  console.log(height, stableHeight);
-});
+const onViewportChanged = () => {
+  console.log(tgg.viewportHeight, tgg.viewportStableHeight);
+};
 
-const offSafeArea = tgg.onSafeAreaChanged((inset) => {
-  console.log(inset.bottom);
-});
+tgg.onEvent("theme_changed", onThemeChanged);
+tgg.onEvent("viewport_changed", onViewportChanged);
 
-const offContentSafeArea = tgg.onContentSafeAreaChanged((inset) => {
-  console.log(inset.bottom);
-});
-
-offTheme();
-offViewport();
-offSafeArea();
-offContentSafeArea();
+tgg.offEvent("theme_changed", onThemeChanged);
+tgg.offEvent("viewport_changed", onViewportChanged);
 ```
 
 For explicit access:
@@ -294,14 +287,14 @@ The runtime performs local checks before native calls:
 ### Back button click events
 
 When the user taps the back button in the navigation bar, the Flutter host should
-notify the JS runtime by calling `window.__tgg_emit("backButtonClicked")`.
+notify the JS runtime by calling `window.__tgg_emit("back_button_clicked")`.
 This is a host-only runtime entrypoint. The SDK's
 `BackButton.onClick(cb)` handlers will fire in response:
 
 ```dart
 // Flutter, on back button tap
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("backButtonClicked")',
+  source: 'window.__tgg_emit("back_button_clicked")',
 );
 ```
 
@@ -311,23 +304,26 @@ usage.
 For generic runtime events, miniapps can use:
 
 ```ts
-tgg.onEvent("themeChanged", (payload) => {
+tgg.onEvent("theme_changed", (payload) => {
   console.log(payload);
 });
 ```
 
 The host may also emit these environment events when state changes:
 
-- `themeChanged`
-- `viewportChanged`
-- `safeAreaChanged`
-- `contentSafeAreaChanged`
-- `fullscreenChanged`
+- `activated`
+- `deactivated`
+- `theme_changed`
+- `viewport_changed`
+- `safe_area_changed`
+- `content_safe_area_changed`
+- `fullscreen_changed`
+- `fullscreen_failed`
 
 Recommended payloads:
 
 ```ts
-window.__tgg_emit("themeChanged", {
+window.__tgg_emit("theme_changed", {
   colorScheme: "dark",
   themeParams: {
     bg_color: "#101010",
@@ -337,26 +333,26 @@ window.__tgg_emit("themeChanged", {
   backgroundColor: "#654321",
 });
 
-window.__tgg_emit("viewportChanged", {
+window.__tgg_emit("viewport_changed", {
   height: 720,
   stableHeight: 688,
 });
 
-window.__tgg_emit("safeAreaChanged", {
+window.__tgg_emit("safe_area_changed", {
   top: 44,
   right: 0,
   bottom: 34,
   left: 0,
 });
 
-window.__tgg_emit("contentSafeAreaChanged", {
+window.__tgg_emit("content_safe_area_changed", {
   top: 0,
   right: 0,
   bottom: 16,
   left: 0,
 });
 
-window.__tgg_emit("fullscreenChanged", {
+window.__tgg_emit("fullscreen_changed", {
   isFullscreen: true,
 });
 ```
@@ -368,10 +364,10 @@ Flutter should emit file download task events with the `taskId` provided in the
 
 ```dart
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("downloadFileProgress", {"taskId":"tgg_download_1","progress":42})',
+  source: 'window.__tgg_emit("download_file_progress", {"taskId":"tgg_download_1","progress":42})',
 );
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("downloadFileSuccess", {"taskId":"tgg_download_1","tempFilePath":"/tmp/report.pdf"})',
+  source: 'window.__tgg_emit("download_file_success", {"taskId":"tgg_download_1","tempFilePath":"/tmp/report.pdf"})',
 );
 ```
 
@@ -402,13 +398,13 @@ If no clipboard text is available, return `{ "data": null }` or omit `data`.
 The SDK will normalize the result to `{ data: null }`.
 
 After `readTextFromClipboard()` resolves, the SDK will also emit
-`clipboardTextReceived` to any active listeners.
+`clipboard_text_received` to any active listeners.
 
 Flutter can return clipboard text to H5 with:
 
 ```dart
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("clipboardTextReceived", {"data":"copied text"})',
+  source: 'window.__tgg_emit("clipboard_text_received", {"data":"copied text"})',
 );
 ```
 

@@ -184,11 +184,11 @@ class MiniAppWebViewController {
   final WebViewController _controller;
 
   Future<void> emitBackButtonClicked() {
-    return emitEvent('backButtonClicked');
+    return emitEvent('back_button_clicked');
   }
 
   Future<void> emitThemeChanged({required String colorScheme}) {
-    return emitEvent('themeChanged', <String, dynamic>{
+    return emitEvent('theme_changed', <String, dynamic>{
       'colorScheme': colorScheme,
     });
   }
@@ -733,19 +733,19 @@ When any of them change after startup, emit host events through `window.__tgg_em
 
 ```dart
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("themeChanged", {"colorScheme":"dark","themeParams":{"bg_color":"#101010"},"headerColor":"#123456","backgroundColor":"#654321"})',
+  source: 'window.__tgg_emit("theme_changed", {"colorScheme":"dark","themeParams":{"bg_color":"#101010"},"headerColor":"#123456","backgroundColor":"#654321"})',
 );
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("viewportChanged", {"height":720,"stableHeight":688})',
+  source: 'window.__tgg_emit("viewport_changed", {"height":720,"stableHeight":688})',
 );
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("safeAreaChanged", {"top":47,"right":0,"bottom":34,"left":0})',
+  source: 'window.__tgg_emit("safe_area_changed", {"top":47,"right":0,"bottom":34,"left":0})',
 );
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("contentSafeAreaChanged", {"top":0,"right":0,"bottom":16,"left":0})',
+  source: 'window.__tgg_emit("content_safe_area_changed", {"top":0,"right":0,"bottom":16,"left":0})',
 );
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("fullscreenChanged", {"isFullscreen":true})',
+  source: 'window.__tgg_emit("fullscreen_changed", {"isFullscreen":true})',
 );
 ```
 

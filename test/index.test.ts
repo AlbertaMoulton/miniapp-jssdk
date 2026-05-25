@@ -16,6 +16,7 @@ import {
   setHeaderColor,
   tgg,
 } from "../src/index";
+import { receiveMiniAppSDKEvent } from "../src/sdk";
 
 type TestGlobal = typeof globalThis & Record<string, unknown>;
 type TestFlutterBridge = {
@@ -365,7 +366,7 @@ test("readTextFromClipboard resolves normalized clipboard data and emits the eve
 
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
-  sdk.onClipboardTextReceived(handler);
+  sdk.onEvent("clipboard_text_received", handler);
 
   await expect(sdk.readTextFromClipboard()).resolves.toEqual({ data: "copied text" });
   expect(handler).toHaveBeenCalledOnce();
@@ -485,12 +486,12 @@ test("tgg proxy forwards property access to the injected runtime", () => {
   expect(ready).toHaveBeenCalledOnce();
 });
 
-test("BackButton onClick fires callbacks when backButtonClicked is received", () => {
+test("BackButton onClick fires callbacks when back_button_clicked is received", () => {
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
   sdk.BackButton.onClick(handler);
 
-  sdk.receiveEvent("backButtonClicked");
+  receiveMiniAppSDKEvent(sdk, "back_button_clicked");
 
   expect(handler).toHaveBeenCalledOnce();
 });
@@ -501,19 +502,19 @@ test("BackButton offClick removes a registered callback", () => {
   sdk.BackButton.onClick(handler);
   sdk.BackButton.offClick(handler);
 
-  sdk.receiveEvent("backButtonClicked");
+  receiveMiniAppSDKEvent(sdk, "back_button_clicked");
 
   expect(handler).not.toHaveBeenCalled();
 });
 
-test("receiveEvent fires all registered BackButton onClick handlers", () => {
+test("internal event receiver fires all registered BackButton onClick handlers", () => {
   const sdk = createMiniAppSDK();
   const handler1 = vi.fn();
   const handler2 = vi.fn();
   sdk.BackButton.onClick(handler1);
   sdk.BackButton.onClick(handler2);
 
-  sdk.receiveEvent("backButtonClicked");
+  receiveMiniAppSDKEvent(sdk, "back_button_clicked");
 
   expect(handler1).toHaveBeenCalledOnce();
   expect(handler2).toHaveBeenCalledOnce();
@@ -523,10 +524,10 @@ test("onEvent and offEvent manage generic runtime event listeners", () => {
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
 
-  sdk.onEvent("themeChanged", handler);
-  sdk.receiveEvent("themeChanged", { colorScheme: "dark" });
-  sdk.offEvent("themeChanged", handler);
-  sdk.receiveEvent("themeChanged", { colorScheme: "light" });
+  sdk.onEvent("theme_changed", handler);
+  receiveMiniAppSDKEvent(sdk, "theme_changed", { colorScheme: "dark" });
+  sdk.offEvent("theme_changed", handler);
+  receiveMiniAppSDKEvent(sdk, "theme_changed", { colorScheme: "light" });
 
   expect(handler).toHaveBeenCalledOnce();
   expect(handler).toHaveBeenCalledWith({ colorScheme: "dark" });
@@ -536,144 +537,35 @@ test("onEvent deduplicates callbacks for the same event", () => {
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
 
-  sdk.onEvent("themeChanged", handler);
-  sdk.onEvent("themeChanged", handler);
-  sdk.receiveEvent("themeChanged", { colorScheme: "dark" });
+  sdk.onEvent("theme_changed", handler);
+  sdk.onEvent("theme_changed", handler);
+  receiveMiniAppSDKEvent(sdk, "theme_changed", { colorScheme: "dark" });
 
   expect(handler).toHaveBeenCalledOnce();
 });
 
-test("onClipboardTextReceived receives clipboard data from native events", () => {
+test("generic onEvent can observe clipboard_text_received events", () => {
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
 
-  const off = sdk.onClipboardTextReceived(handler);
-  sdk.receiveEvent("clipboardTextReceived", { data: "hello" });
-  off();
-  sdk.receiveEvent("clipboardTextReceived", { data: "ignored" });
-
-  expect(handler).toHaveBeenCalledOnce();
-  expect(handler).toHaveBeenCalledWith({ data: "hello" });
-});
-
-test("onClipboardTextReceived normalizes missing clipboard data to null", () => {
-  const sdk = createMiniAppSDK();
-  const handler = vi.fn();
-
-  sdk.onClipboardTextReceived(handler);
-  sdk.receiveEvent("clipboardTextReceived", {});
-
-  expect(handler).toHaveBeenCalledWith({ data: null });
-});
-
-test("onThemeChanged receives normalized theme payload and returns an unsubscribe handler", () => {
-  const sdk = createMiniAppSDK();
-  const handler = vi.fn();
-
-  const off = sdk.onThemeChanged(handler);
-  sdk.receiveEvent("themeChanged", {
-    colorScheme: "dark",
-    themeParams: {
-      bg_color: "#101010",
-      text_color: "#ffffff",
-      ignored: 1,
-    },
-    headerColor: "#123456",
-    backgroundColor: "#654321",
-  });
-  off();
-  sdk.receiveEvent("themeChanged", {
-    colorScheme: "light",
-  });
-
-  expect(handler).toHaveBeenCalledOnce();
-  expect(handler).toHaveBeenCalledWith({
-    colorScheme: "dark",
-    themeParams: {
-      bg_color: "#101010",
-      text_color: "#ffffff",
-    },
-    headerColor: "#123456",
-    backgroundColor: "#654321",
-  });
-});
-
-test("onViewportChanged normalizes missing viewport fields to zero", () => {
-  const sdk = createMiniAppSDK();
-  const handler = vi.fn();
-
-  sdk.onViewportChanged(handler);
-  sdk.receiveEvent("viewportChanged", {
-    height: 720,
-  });
-  sdk.receiveEvent("viewportChanged", {});
-
-  expect(handler).toHaveBeenNthCalledWith(1, {
-    height: 720,
-    stableHeight: 0,
-  });
-  expect(handler).toHaveBeenNthCalledWith(2, {
-    height: 0,
-    stableHeight: 0,
-  });
-});
-
-test("onSafeAreaChanged normalizes invalid payloads to empty insets", () => {
-  const sdk = createMiniAppSDK();
-  const handler = vi.fn();
-
-  sdk.onSafeAreaChanged(handler);
-  sdk.receiveEvent("safeAreaChanged", {
-    top: 10,
-    right: 11,
-    bottom: 12,
-    left: 13,
-  });
-  sdk.receiveEvent("safeAreaChanged", null);
-
-  expect(handler).toHaveBeenNthCalledWith(1, {
-    top: 10,
-    right: 11,
-    bottom: 12,
-    left: 13,
-  });
-  expect(handler).toHaveBeenNthCalledWith(2, {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-  });
-});
-
-test("onContentSafeAreaChanged receives normalized content safe area payload", () => {
-  const sdk = createMiniAppSDK();
-  const handler = vi.fn();
-
-  sdk.onContentSafeAreaChanged(handler);
-  sdk.receiveEvent("contentSafeAreaChanged", {
-    top: 1,
-    right: 2,
-    bottom: 3,
-    left: 4,
-  });
-
-  expect(handler).toHaveBeenCalledOnce();
-  expect(handler).toHaveBeenCalledWith({
-    top: 1,
-    right: 2,
-    bottom: 3,
-    left: 4,
-  });
-});
-
-test("generic onEvent can observe clipboardTextReceived events", () => {
-  const sdk = createMiniAppSDK();
-  const handler = vi.fn();
-
-  sdk.onEvent("clipboardTextReceived", handler);
-  sdk.receiveEvent("clipboardTextReceived", { data: "copied" });
+  sdk.onEvent("clipboard_text_received", handler);
+  receiveMiniAppSDKEvent(sdk, "clipboard_text_received", { data: "copied" });
 
   expect(handler).toHaveBeenCalledWith({ data: "copied" });
+});
+
+test("MiniAppSDK only exposes generic event subscription APIs", () => {
+  const sdk = createMiniAppSDK() as unknown as Record<string, unknown>;
+
+  expect(sdk.onEvent).toEqual(expect.any(Function));
+  expect(sdk.offEvent).toEqual(expect.any(Function));
+  expect(sdk.onClipboardTextReceived).toBeUndefined();
+  expect(sdk.onThemeChanged).toBeUndefined();
+  expect(sdk.onViewportChanged).toBeUndefined();
+  expect(sdk.onSafeAreaChanged).toBeUndefined();
+  expect(sdk.onContentSafeAreaChanged).toBeUndefined();
+  expect(sdk.receiveEvent).toBeUndefined();
+  expect(sdk.invoke).toBeUndefined();
 });
 
 test("BackButton handlers are isolated when one handler throws", () => {
@@ -688,7 +580,7 @@ test("BackButton handlers are isolated when one handler throws", () => {
   sdk.BackButton.onClick(throwingHandler);
   sdk.BackButton.onClick(nextHandler);
 
-  expect(() => sdk.receiveEvent("backButtonClicked")).not.toThrow();
+  expect(() => receiveMiniAppSDKEvent(sdk, "back_button_clicked")).not.toThrow();
 
   expect(throwingHandler).toHaveBeenCalledOnce();
   expect(nextHandler).toHaveBeenCalledOnce();
@@ -705,23 +597,23 @@ test("BackButton dispatch uses a listener snapshot for the current event", () =>
   });
   sdk.BackButton.onClick(firstHandler);
 
-  sdk.receiveEvent("backButtonClicked");
+  receiveMiniAppSDKEvent(sdk, "back_button_clicked");
 
   expect(firstHandler).toHaveBeenCalledOnce();
   expect(lateHandler).not.toHaveBeenCalled();
 
-  sdk.receiveEvent("backButtonClicked");
+  receiveMiniAppSDKEvent(sdk, "back_button_clicked");
 
   expect(firstHandler).toHaveBeenCalledTimes(2);
   expect(lateHandler).toHaveBeenCalledOnce();
 });
 
-test("receiveEvent ignores unknown events for typed SDK listeners", () => {
+test("internal event receiver ignores unknown events for typed SDK listeners", () => {
   const sdk = createMiniAppSDK();
   const handler = vi.fn();
   sdk.BackButton.onClick(handler);
 
-  expect(() => sdk.receiveEvent("unknown" as never)).not.toThrow();
+  expect(() => receiveMiniAppSDKEvent(sdk, "unknown" as never)).not.toThrow();
 
   expect(handler).not.toHaveBeenCalled();
 });
@@ -940,7 +832,7 @@ test("runtime updates environment properties and css variables from host events"
     isFullscreen: false,
   });
 
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("themeChanged", {
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("theme_changed", {
     colorScheme: "dark",
     themeParams: {
       bg_color: "#111111",
@@ -949,18 +841,18 @@ test("runtime updates environment properties and css variables from host events"
     headerColor: "#222222",
     backgroundColor: "#333333",
   });
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("viewportChanged", {
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("viewport_changed", {
     height: 640,
     stableHeight: 620,
   });
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("safeAreaChanged", {
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("safe_area_changed", {
     top: 10,
     right: 11,
     bottom: 12,
     left: 13,
   });
   (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)(
-    "contentSafeAreaChanged",
+    "content_safe_area_changed",
     {
       top: 14,
       right: 15,
@@ -968,7 +860,7 @@ test("runtime updates environment properties and css variables from host events"
       left: 17,
     },
   );
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("fullscreenChanged", {
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("fullscreen_changed", {
     isFullscreen: true,
   });
 
@@ -1016,7 +908,7 @@ test("BackButton onClick fires through window.__tgg_emit", () => {
   const handler = vi.fn();
   runtime.BackButton.onClick(handler);
 
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("backButtonClicked");
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("back_button_clicked");
 
   expect(handler).toHaveBeenCalledOnce();
 });
@@ -1043,7 +935,7 @@ test("window.__tgg_emit dispatches generic CustomEvent subscribers", () => {
 
   createTggRuntime();
 
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("themeChanged", {
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("theme_changed", {
     colorScheme: "dark",
   });
 
@@ -1051,7 +943,7 @@ test("window.__tgg_emit dispatches generic CustomEvent subscribers", () => {
   expect(dispatchEvent.mock.calls[0][0]).toMatchObject({
     type: "tgg:event",
     detail: {
-      eventName: "themeChanged",
+      eventName: "theme_changed",
       payload: {
         colorScheme: "dark",
       },
@@ -1072,7 +964,7 @@ test("window.__tgg_emit skips CustomEvent dispatch when unavailable", () => {
   createTggRuntime();
 
   expect(() => {
-    (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("themeChanged", {
+    (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("theme_changed", {
       colorScheme: "dark",
     });
   }).not.toThrow();
@@ -1227,7 +1119,7 @@ test("downloadFile starts a native download task and returns task controls", asy
     },
   });
 
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("downloadFileSuccess", {
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("download_file_success", {
     taskId: "tgg_download_1",
     tempFilePath: "/tmp/report.pdf",
   });
@@ -1252,7 +1144,7 @@ test("downloadFile task manages progress listeners", () => {
   task.onProgressUpdate(progress);
   task.onProgressUpdate(progress);
   (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)(
-    "downloadFileProgress",
+    "download_file_progress",
     {
       taskId: "tgg_download_1",
       progress: 42,
@@ -1260,7 +1152,7 @@ test("downloadFile task manages progress listeners", () => {
   );
   task.offProgressUpdate(progress);
   (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)(
-    "downloadFileProgress",
+    "download_file_progress",
     {
       taskId: "tgg_download_1",
       progress: 90,
@@ -1287,7 +1179,7 @@ test("downloadFile task dispatches fail and complete on native failure", () => {
     complete,
   });
 
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("downloadFileFail", {
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("download_file_fail", {
     taskId: "tgg_download_1",
     errMsg: "download failed",
   });

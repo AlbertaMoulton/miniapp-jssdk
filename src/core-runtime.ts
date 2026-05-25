@@ -1,6 +1,6 @@
 import { SDK_VERSION, TGG_EVENT_GLOBAL_NAME, TGG_GLOBAL_NAME } from "./constants";
 import { getRuntimeGlobal } from "./runtime";
-import { createMiniAppSDK, NATIVE_METHOD_CAPABILITIES } from "./sdk";
+import { createMiniAppSDK, NATIVE_METHOD_CAPABILITIES, receiveMiniAppSDKEvent } from "./sdk";
 import type {
   InitData,
   MiniAppMethod,
@@ -102,7 +102,7 @@ export const createTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp => 
   global[TGG_EVENT_GLOBAL_NAME] = (eventName: string, payload?: unknown) => {
     applyRuntimeEvent(runtimeMetadata, eventName as TggEventName, payload);
     syncCssVariables(runtimeMetadata);
-    runtime.receiveEvent(eventName as TggEventName, payload);
+    receiveMiniAppSDKEvent(sdk, eventName as TggEventName, payload);
     dispatchTggCustomEvent(eventName, payload);
   };
 
@@ -114,8 +114,7 @@ export const installTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp =>
   const currentRuntime = global[TGG_GLOBAL_NAME] as TggWebApp | undefined;
 
   if (
-    typeof currentRuntime?.invoke === "function" &&
-    typeof currentRuntime.init === "function" &&
+    typeof currentRuntime?.init === "function" &&
     typeof currentRuntime.canIUse === "function" &&
     typeof currentRuntime.isVersionAtLeast === "function" &&
     currentRuntime.BackButton
@@ -193,13 +192,13 @@ const applyRuntimeEvent = (
   payload?: unknown,
 ): void => {
   if (!isRecord(payload)) {
-    if (eventName === "fullscreenChanged") {
+    if (eventName === "fullscreen_changed") {
       runtimeMetadata.isFullscreen = false;
     }
     return;
   }
 
-  if (eventName === "themeChanged") {
+  if (eventName === "theme_changed") {
     const colorScheme = getColorScheme(payload.colorScheme);
     if (colorScheme) {
       runtimeMetadata.colorScheme = colorScheme;
@@ -211,23 +210,23 @@ const applyRuntimeEvent = (
     return;
   }
 
-  if (eventName === "viewportChanged") {
+  if (eventName === "viewport_changed") {
     runtimeMetadata.viewportHeight = normalizeDimension(payload.height);
     runtimeMetadata.viewportStableHeight = normalizeDimension(payload.stableHeight);
     return;
   }
 
-  if (eventName === "safeAreaChanged") {
+  if (eventName === "safe_area_changed") {
     runtimeMetadata.safeAreaInset = normalizeSafeAreaInset(payload);
     return;
   }
 
-  if (eventName === "contentSafeAreaChanged") {
+  if (eventName === "content_safe_area_changed") {
     runtimeMetadata.contentSafeAreaInset = normalizeSafeAreaInset(payload);
     return;
   }
 
-  if (eventName === "fullscreenChanged") {
+  if (eventName === "fullscreen_changed") {
     runtimeMetadata.isFullscreen = Boolean(payload.isFullscreen);
   }
 };

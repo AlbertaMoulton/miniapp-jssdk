@@ -136,10 +136,6 @@ import {
   getSystemInfo,
   getUserId,
   getUserInfo,
-  onContentSafeAreaChanged,
-  onSafeAreaChanged,
-  onThemeChanged,
-  onViewportChanged,
   readTextFromClipboard,
   setHeaderColor,
 } from "@teamgaga/miniapp-jssdk";
@@ -445,136 +441,44 @@ console.log(data);
 注意：
 
 - 如果 Native 没有读到文本，SDK 会把结果规范化为 `{ data: null }`。
-- `readTextFromClipboard()` 成功 resolve 后，SDK 也会同步触发一次 `clipboardTextReceived` 事件，方便统一复用监听逻辑。
-
-### `tgg.onClipboardTextReceived(callback)`
-
-```ts
-tgg.onClipboardTextReceived(
-  callback: (res: { data: string | null }) => void,
-): () => void
-```
-
-使用场景：
-
-- 监听 Flutter Host 返回给 H5 的剪贴板文本。
-- 适合监听 `readTextFromClipboard()` 的结果，或接收 Native 侧通过 `window.__tgg_emit("clipboardTextReceived", payload)` 主动回推的结果。
-
-参数：
-
-| 参数       | 类型                                      | 必填 | 说明                   |
-| ---------- | ----------------------------------------- | ---- | ---------------------- |
-| `callback` | `(res: { data: string \| null }) => void` | 是   | 收到剪贴板文本时执行。 |
-
-返回值：
-
-| 类型         | 说明           |
-| ------------ | -------------- |
-| `() => void` | 取消监听函数。 |
-
-示例：
-
-```ts
-const offClipboard = tgg.onClipboardTextReceived(({ data }) => {
-  console.log(data);
-});
-
-offClipboard();
-```
-
-注意：
-
-- 字段名沿用 Telegram Mini App 的 `data` 习惯。
-- 如果 Host 没有返回文本，SDK 会把回调参数规范化为 `{ data: null }`。
-- 这是事件监听 API，本身不会发起 Native 调用；主动读取请使用 `tgg.readTextFromClipboard()`。
+- `readTextFromClipboard()` 成功 resolve 后，SDK 也会同步触发一次 `clipboard_text_received` 事件，方便统一复用监听逻辑。
 
 ## 环境事件 API
 
-这组 API 参考 Telegram Mini Apps 的环境事件模型，但做了两点工程化收口：
-
-- 统一返回 `() => void` 解绑函数，便于在 React `useEffect`、Vue `onUnmounted` 里直接清理。
-- 回调参数是规范化后的稳定结构，业务层不需要自己判断字段是否缺失。
-
-### `tgg.onThemeChanged(callback)`
-
-```ts
-tgg.onThemeChanged(
-  callback: (payload: {
-    colorScheme: "light" | "dark";
-    themeParams: Record<string, string>;
-    headerColor?: string;
-    backgroundColor?: string;
-  }) => void,
-): () => void
-```
-
-使用场景：
-
-- 监听宿主主题变化。
-- 在暗黑模式切换时同步页面配色。
+TeamGaga 与 Telegram Mini Apps 保持一致：事件通过 `tgg.onEvent(eventName, callback)` 统一订阅，状态从 `tgg` 上的运行时属性读取。
 
 示例：
 
 ```ts
-const offTheme = tgg.onThemeChanged(({ colorScheme, themeParams }) => {
-  document.body.dataset.theme = colorScheme;
-  console.log(themeParams.bg_color);
-});
+const onThemeChanged = () => {
+  document.body.dataset.theme = tgg.colorScheme;
+  console.log(tgg.themeParams.bg_color);
+};
+
+const onViewportChanged = () => {
+  console.log(tgg.viewportHeight, tgg.viewportStableHeight);
+};
+
+tgg.onEvent("theme_changed", onThemeChanged);
+tgg.onEvent("viewport_changed", onViewportChanged);
+
+tgg.offEvent("theme_changed", onThemeChanged);
+tgg.offEvent("viewport_changed", onViewportChanged);
 ```
 
-### `tgg.onViewportChanged(callback)`
+常用事件：
 
-```ts
-tgg.onViewportChanged(
-  callback: (payload: { height: number; stableHeight: number }) => void,
-): () => void
-```
-
-使用场景：
-
-- 监听可用 viewport 高度变化。
-- 适配键盘弹起、底部容器伸缩或宿主布局变化。
-
-示例：
-
-```ts
-const offViewport = tgg.onViewportChanged(({ height, stableHeight }) => {
-  console.log(height, stableHeight);
-});
-```
-
-### `tgg.onSafeAreaChanged(callback)`
-
-```ts
-tgg.onSafeAreaChanged(
-  callback: (payload: { top: number; right: number; bottom: number; left: number }) => void,
-): () => void
-```
-
-使用场景：
-
-- 监听宿主安全区变化。
-- 适配刘海、底部 Home Indicator 或横竖屏切换。
-
-### `tgg.onContentSafeAreaChanged(callback)`
-
-```ts
-tgg.onContentSafeAreaChanged(
-  callback: (payload: { top: number; right: number; bottom: number; left: number }) => void,
-): () => void
-```
-
-使用场景：
-
-- 监听内容区域安全区变化。
-- 适合页面自身有 fixed footer、沉浸式内容区时使用。
-
-注意：
-
-- `themeParams` 只保留字符串值，其他异常字段会被过滤掉。
-- `viewportChanged` 缺失字段会规范化为 `0`。
-- `safeAreaChanged` 和 `contentSafeAreaChanged` 缺失字段会规范化为 `0`。
-- 这些 API 是 `themeChanged`、`viewportChanged`、`safeAreaChanged`、`contentSafeAreaChanged` 的语义化封装；如需更底层能力，仍可使用 `tgg.onEvent(...)`。
+| 事件名 | 读取方式 |
+| ------ | -------- |
+| `"activated"` | 小程序变为活跃，可恢复轮询或刷新临时状态 |
+| `"deactivated"` | 小程序变为非活跃，可暂停轮询、视频或动画 |
+| `"theme_changed"` | 从 `tgg.colorScheme` 和 `tgg.themeParams` 读取最新主题 |
+| `"viewport_changed"` | 从 `tgg.viewportHeight` 和 `tgg.viewportStableHeight` 读取最新高度 |
+| `"safe_area_changed"` | 从 `tgg.safeAreaInset` 读取最新安全区 |
+| `"content_safe_area_changed"` | 从 `tgg.contentSafeAreaInset` 读取最新内容安全区 |
+| `"fullscreen_changed"` | 从 `tgg.isFullscreen` 读取最新 fullscreen 状态 |
+| `"fullscreen_failed"` | 回调 payload 为 `{ error: string }` |
+| `"clipboard_text_received"` | 回调 payload 为 `{ data: string \| null }` |
 
 ## 导航栏 API
 
@@ -1040,7 +944,7 @@ tgg.canIUse(capability: string): boolean
 
 | 参数         | 类型     | 必填 | 说明                                                                          |
 | ------------ | -------- | ---- | ----------------------------------------------------------------------------- |
-| `capability` | `string` | 是   | 能力名，例如 `"setHeaderColor"`、`"BackButton.show"`、`"backButtonClicked"`。 |
+| `capability` | `string` | 是   | 能力名，例如 `"setHeaderColor"`、`"BackButton.show"`、`"back_button_clicked"`。 |
 
 返回值：
 
@@ -1069,16 +973,19 @@ tgg.canIUse(capability: string): boolean
 | `"savePhoto"`              | 保存图片到系统相册。          |
 | `"saveVideo"`              | 保存视频到系统相册。          |
 | `"readTextFromClipboard"`  | 主动读取剪贴板文本。          |
-| `"themeChanged"`           | 主题变化事件能力。            |
-| `"backButtonClicked"`      | 原生返回按钮点击事件能力。    |
-| `"viewportChanged"`        | viewport 变化事件能力。       |
-| `"safeAreaChanged"`        | 安全区变化事件能力。          |
-| `"contentSafeAreaChanged"` | 内容安全区变化事件能力。      |
-| `"fullscreenChanged"`      | fullscreen 状态变化事件能力。 |
-| `"downloadFileProgress"`   | 下载进度事件能力。            |
-| `"downloadFileSuccess"`    | 下载成功事件能力。            |
-| `"downloadFileFail"`       | 下载失败事件能力。            |
-| `"clipboardTextReceived"`  | 剪贴板文本返回事件能力。      |
+| `"activated"`              | Mini App 变为活跃事件能力。   |
+| `"deactivated"`            | Mini App 变为非活跃事件能力。 |
+| `"theme_changed"`           | 主题变化事件能力。            |
+| `"back_button_clicked"`      | 原生返回按钮点击事件能力。    |
+| `"viewport_changed"`        | viewport 变化事件能力。       |
+| `"safe_area_changed"`        | 安全区变化事件能力。          |
+| `"content_safe_area_changed"` | 内容安全区变化事件能力。      |
+| `"fullscreen_changed"`      | fullscreen 状态变化事件能力。 |
+| `"fullscreen_failed"`       | fullscreen 失败事件能力。     |
+| `"download_file_progress"`   | 下载进度事件能力。            |
+| `"download_file_success"`    | 下载成功事件能力。            |
+| `"download_file_fail"`       | 下载失败事件能力。            |
+| `"clipboard_text_received"`  | 剪贴板文本返回事件能力。      |
 
 示例：
 
@@ -1140,7 +1047,7 @@ tgg.onEvent(eventName: TggEventName, callback: (payload?: unknown) => void): voi
 示例：
 
 ```ts
-tgg.onEvent("themeChanged", (payload) => {
+tgg.onEvent("theme_changed", (payload) => {
   console.log(payload);
 });
 ```
@@ -1327,7 +1234,7 @@ window.__tgg_emit(eventName: TggEventName | string, payload?: unknown): void
 
 | 参数        | 类型                     | 必填 | 说明                                       |
 | ----------- | ------------------------ | ---- | ------------------------------------------ |
-| `eventName` | `TggEventName \| string` | 是   | 事件名，例如 `"backButtonClicked"`。       |
+| `eventName` | `TggEventName \| string` | 是   | 事件名，例如 `"back_button_clicked"`。       |
 | `payload`   | `unknown`                | 否   | 事件数据。返回按钮事件通常不需要 payload。 |
 
 返回值：
@@ -1340,7 +1247,7 @@ Flutter 示例：
 
 ```dart
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("backButtonClicked")',
+  source: 'window.__tgg_emit("back_button_clicked")',
 );
 ```
 
@@ -1348,16 +1255,19 @@ controller.evaluateJavascript(
 
 ```ts
 type TggEventName =
-  | "backButtonClicked"
-  | "themeChanged"
-  | "viewportChanged"
-  | "safeAreaChanged"
-  | "contentSafeAreaChanged"
-  | "fullscreenChanged"
-  | "downloadFileProgress"
-  | "downloadFileSuccess"
-  | "downloadFileFail"
-  | "clipboardTextReceived";
+  | "activated"
+  | "deactivated"
+  | "back_button_clicked"
+  | "theme_changed"
+  | "viewport_changed"
+  | "safe_area_changed"
+  | "content_safe_area_changed"
+  | "fullscreen_changed"
+  | "fullscreen_failed"
+  | "download_file_progress"
+  | "download_file_success"
+  | "download_file_fail"
+  | "clipboard_text_received";
 type TggEventPayload = unknown;
 ```
 
@@ -1365,13 +1275,13 @@ type TggEventPayload = unknown;
 
 ```dart
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("downloadFileProgress", {"taskId":"tgg_download_1","progress":42})',
+  source: 'window.__tgg_emit("download_file_progress", {"taskId":"tgg_download_1","progress":42})',
 );
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("downloadFileSuccess", {"taskId":"tgg_download_1","tempFilePath":"/tmp/report.pdf"})',
+  source: 'window.__tgg_emit("download_file_success", {"taskId":"tgg_download_1","tempFilePath":"/tmp/report.pdf"})',
 );
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("downloadFileFail", {"taskId":"tgg_download_1","errMsg":"download failed"})',
+  source: 'window.__tgg_emit("download_file_fail", {"taskId":"tgg_download_1","errMsg":"download failed"})',
 );
 ```
 
@@ -1389,13 +1299,13 @@ console.log(result.data);
 ```
 
 SDK 会把结果规范化为 `{ data: string | null }`，并在 Promise resolve 后额外触发一次
-`clipboardTextReceived`。
+`clipboard_text_received`。
 
 剪贴板事件示例：
 
 ```dart
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("clipboardTextReceived", {"data":"copied text"})',
+  source: 'window.__tgg_emit("clipboard_text_received", {"data":"copied text"})',
 );
 ```
 
@@ -1643,16 +1553,19 @@ type MiniAppMethod =
 ```ts
 type TggCapability =
   | MiniAppMethod
-  | "themeChanged"
-  | "backButtonClicked"
-  | "viewportChanged"
-  | "safeAreaChanged"
-  | "contentSafeAreaChanged"
-  | "fullscreenChanged"
-  | "downloadFileProgress"
-  | "downloadFileSuccess"
-  | "downloadFileFail"
-  | "clipboardTextReceived";
+  | "activated"
+  | "deactivated"
+  | "theme_changed"
+  | "back_button_clicked"
+  | "viewport_changed"
+  | "safe_area_changed"
+  | "content_safe_area_changed"
+  | "fullscreen_changed"
+  | "fullscreen_failed"
+  | "download_file_progress"
+  | "download_file_success"
+  | "download_file_fail"
+  | "clipboard_text_received";
 ```
 
 ### `ThemeParams`

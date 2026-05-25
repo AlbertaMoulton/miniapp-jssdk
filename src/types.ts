@@ -23,28 +23,34 @@ export type TggColorScheme = "light" | "dark";
 
 export type TggCapability =
   | MiniAppMethod
-  | "themeChanged"
-  | "backButtonClicked"
-  | "viewportChanged"
-  | "safeAreaChanged"
-  | "contentSafeAreaChanged"
-  | "fullscreenChanged"
-  | "downloadFileProgress"
-  | "downloadFileSuccess"
-  | "downloadFileFail"
-  | "clipboardTextReceived";
+  | "activated"
+  | "deactivated"
+  | "theme_changed"
+  | "back_button_clicked"
+  | "viewport_changed"
+  | "safe_area_changed"
+  | "content_safe_area_changed"
+  | "fullscreen_changed"
+  | "fullscreen_failed"
+  | "download_file_progress"
+  | "download_file_success"
+  | "download_file_fail"
+  | "clipboard_text_received";
 
 export type TggEventName =
-  | "backButtonClicked"
-  | "themeChanged"
-  | "viewportChanged"
-  | "safeAreaChanged"
-  | "contentSafeAreaChanged"
-  | "fullscreenChanged"
-  | "downloadFileProgress"
-  | "downloadFileSuccess"
-  | "downloadFileFail"
-  | "clipboardTextReceived";
+  | "activated"
+  | "deactivated"
+  | "back_button_clicked"
+  | "theme_changed"
+  | "viewport_changed"
+  | "safe_area_changed"
+  | "content_safe_area_changed"
+  | "fullscreen_changed"
+  | "fullscreen_failed"
+  | "download_file_progress"
+  | "download_file_success"
+  | "download_file_fail"
+  | "clipboard_text_received";
 
 export type TggEventPayload = unknown;
 
@@ -167,30 +173,7 @@ export type ClipboardTextReceivedResult = {
   data: string | null;
 };
 
-export type ClipboardTextReceivedCallback = (res: ClipboardTextReceivedResult) => void;
-
-export type ThemeChangedPayload = {
-  colorScheme: TggColorScheme;
-  themeParams: ThemeParams;
-  headerColor?: string;
-  backgroundColor?: string;
-};
-
-export type ThemeChangedCallback = (payload: ThemeChangedPayload) => void;
-
-export type ViewportChangedPayload = {
-  height: number;
-  stableHeight: number;
-};
-
-export type ViewportChangedCallback = (payload: ViewportChangedPayload) => void;
-
-export type SafeAreaChangedCallback = (payload: SafeAreaInset) => void;
-
-export type ContentSafeAreaChangedCallback = (payload: SafeAreaInset) => void;
-
 export type MiniAppSDK = {
-  invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
   canIUse(capability: string): boolean;
   isVersionAtLeast(version: string): boolean;
   onEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void;
@@ -209,13 +192,7 @@ export type MiniAppSDK = {
   savePhoto(options: SavePhotoOptions): Promise<boolean>;
   saveVideo(options: SaveVideoOptions): Promise<boolean>;
   readTextFromClipboard(): Promise<ClipboardTextReceivedResult>;
-  onClipboardTextReceived(callback: ClipboardTextReceivedCallback): () => void;
-  onThemeChanged(callback: ThemeChangedCallback): () => void;
-  onViewportChanged(callback: ViewportChangedCallback): () => void;
-  onSafeAreaChanged(callback: SafeAreaChangedCallback): () => void;
-  onContentSafeAreaChanged(callback: ContentSafeAreaChangedCallback): () => void;
   BackButton: TggBackButton;
-  receiveEvent(eventName: TggEventName, payload?: unknown): void;
 };
 
 export type TggBackButton = {

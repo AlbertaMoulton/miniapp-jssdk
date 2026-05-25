@@ -9,10 +9,6 @@ export {
   getSystemInfo,
   getUserId,
   getUserInfo,
-  onContentSafeAreaChanged,
-  onSafeAreaChanged,
-  onThemeChanged,
-  onViewportChanged,
   setHeaderColor,
   tgg,
 } from "./sdk";
@@ -23,9 +19,7 @@ export { tgg as default } from "./sdk";
 
 export type {
   BridgeTransport,
-  ClipboardTextReceivedCallback,
   ClipboardTextReceivedResult,
-  ContentSafeAreaChangedCallback,
   FlutterInAppWebViewBridge,
   CapabilityConfig,
   CommunityInfo,
@@ -46,12 +40,9 @@ export type {
   MiniAppSDKError,
   MiniAppSDKOptions,
   SafeAreaInset,
-  SafeAreaChangedCallback,
   SavePhotoOptions,
   SaveVideoOptions,
   SystemInfo,
-  ThemeChangedCallback,
-  ThemeChangedPayload,
   ThemeParams,
   UserInfo,
   TggBackButton,
@@ -62,7 +53,5 @@ export type {
   TggHeaderColor,
   TggRuntimeOptions,
   TggWebApp,
-  ViewportChangedCallback,
-  ViewportChangedPayload,
   WebViewFlutterJavaScriptChannel,
 } from "./types";
