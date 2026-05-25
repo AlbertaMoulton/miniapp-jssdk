@@ -468,17 +468,17 @@ tgg.offEvent("viewport_changed", onViewportChanged);
 
 常用事件：
 
-| 事件名 | 读取方式 |
-| ------ | -------- |
-| `"activated"` | 小程序变为活跃，可恢复轮询或刷新临时状态 |
-| `"deactivated"` | 小程序变为非活跃，可暂停轮询、视频或动画 |
-| `"theme_changed"` | 从 `tgg.colorScheme` 和 `tgg.themeParams` 读取最新主题 |
-| `"viewport_changed"` | 从 `tgg.viewportHeight` 和 `tgg.viewportStableHeight` 读取最新高度 |
-| `"safe_area_changed"` | 从 `tgg.safeAreaInset` 读取最新安全区 |
-| `"content_safe_area_changed"` | 从 `tgg.contentSafeAreaInset` 读取最新内容安全区 |
-| `"fullscreen_changed"` | 从 `tgg.isFullscreen` 读取最新 fullscreen 状态 |
-| `"fullscreen_failed"` | 回调 payload 为 `{ error: string }` |
-| `"clipboard_text_received"` | 回调 payload 为 `{ data: string \| null }` |
+| 事件名                        | 读取方式                                                           |
+| ----------------------------- | ------------------------------------------------------------------ |
+| `"activated"`                 | 小程序变为活跃，可恢复轮询或刷新临时状态                           |
+| `"deactivated"`               | 小程序变为非活跃，可暂停轮询、视频或动画                           |
+| `"theme_changed"`             | 从 `tgg.colorScheme` 和 `tgg.themeParams` 读取最新主题             |
+| `"viewport_changed"`          | 从 `tgg.viewportHeight` 和 `tgg.viewportStableHeight` 读取最新高度 |
+| `"safe_area_changed"`         | 从 `tgg.safeAreaInset` 读取最新安全区                              |
+| `"content_safe_area_changed"` | 从 `tgg.contentSafeAreaInset` 读取最新内容安全区                   |
+| `"fullscreen_changed"`        | 从 `tgg.isFullscreen` 读取最新 fullscreen 状态                     |
+| `"fullscreen_failed"`         | 回调 payload 为 `{ error: string }`                                |
+| `"clipboard_text_received"`   | 回调 payload 为 `{ data: string \| null }`                         |
 
 ## 导航栏 API
 
@@ -942,8 +942,8 @@ tgg.canIUse(capability: string): boolean
 
 参数：
 
-| 参数         | 类型     | 必填 | 说明                                                                          |
-| ------------ | -------- | ---- | ----------------------------------------------------------------------------- |
+| 参数         | 类型     | 必填 | 说明                                                                            |
+| ------------ | -------- | ---- | ------------------------------------------------------------------------------- |
 | `capability` | `string` | 是   | 能力名，例如 `"setHeaderColor"`、`"BackButton.show"`、`"back_button_clicked"`。 |
 
 返回值：
@@ -954,38 +954,38 @@ tgg.canIUse(capability: string): boolean
 
 当前可检测能力：
 
-| 能力名                     | 说明                          |
-| -------------------------- | ----------------------------- |
-| `"init"`                   | SDK / Native bridge 握手。    |
-| `"ready"`                  | 页面 ready 通知。             |
-| `"close"`                  | 关闭当前 Mini App。           |
-| `"setHeaderColor"`         | 设置原生导航栏颜色。          |
-| `"BackButton.show"`        | 展示原生返回按钮。            |
-| `"BackButton.hide"`        | 隐藏原生返回按钮。            |
-| `"getOauthCode"`           | 获取 OAuth code。             |
-| `"getUserId"`              | 获取用户 ID。                 |
-| `"getUserInfo"`            | 获取用户基础信息。            |
-| `"getSystemInfo"`          | 获取系统信息。                |
-| `"getCommunityId"`         | 获取社群 ID。                 |
-| `"getCommunityInfo"`       | 获取社群基础信息。            |
-| `"downloadFile"`           | 下载远程文件。                |
-| `"abortDownloadFile"`      | 取消下载任务。                |
-| `"savePhoto"`              | 保存图片到系统相册。          |
-| `"saveVideo"`              | 保存视频到系统相册。          |
-| `"readTextFromClipboard"`  | 主动读取剪贴板文本。          |
-| `"activated"`              | Mini App 变为活跃事件能力。   |
-| `"deactivated"`            | Mini App 变为非活跃事件能力。 |
-| `"theme_changed"`           | 主题变化事件能力。            |
-| `"back_button_clicked"`      | 原生返回按钮点击事件能力。    |
-| `"viewport_changed"`        | viewport 变化事件能力。       |
-| `"safe_area_changed"`        | 安全区变化事件能力。          |
+| 能力名                        | 说明                          |
+| ----------------------------- | ----------------------------- |
+| `"init"`                      | SDK / Native bridge 握手。    |
+| `"ready"`                     | 页面 ready 通知。             |
+| `"close"`                     | 关闭当前 Mini App。           |
+| `"setHeaderColor"`            | 设置原生导航栏颜色。          |
+| `"BackButton.show"`           | 展示原生返回按钮。            |
+| `"BackButton.hide"`           | 隐藏原生返回按钮。            |
+| `"getOauthCode"`              | 获取 OAuth code。             |
+| `"getUserId"`                 | 获取用户 ID。                 |
+| `"getUserInfo"`               | 获取用户基础信息。            |
+| `"getSystemInfo"`             | 获取系统信息。                |
+| `"getCommunityId"`            | 获取社群 ID。                 |
+| `"getCommunityInfo"`          | 获取社群基础信息。            |
+| `"downloadFile"`              | 下载远程文件。                |
+| `"abortDownloadFile"`         | 取消下载任务。                |
+| `"savePhoto"`                 | 保存图片到系统相册。          |
+| `"saveVideo"`                 | 保存视频到系统相册。          |
+| `"readTextFromClipboard"`     | 主动读取剪贴板文本。          |
+| `"activated"`                 | Mini App 变为活跃事件能力。   |
+| `"deactivated"`               | Mini App 变为非活跃事件能力。 |
+| `"theme_changed"`             | 主题变化事件能力。            |
+| `"back_button_clicked"`       | 原生返回按钮点击事件能力。    |
+| `"viewport_changed"`          | viewport 变化事件能力。       |
+| `"safe_area_changed"`         | 安全区变化事件能力。          |
 | `"content_safe_area_changed"` | 内容安全区变化事件能力。      |
-| `"fullscreen_changed"`      | fullscreen 状态变化事件能力。 |
-| `"fullscreen_failed"`       | fullscreen 失败事件能力。     |
-| `"download_file_progress"`   | 下载进度事件能力。            |
-| `"download_file_success"`    | 下载成功事件能力。            |
-| `"download_file_fail"`       | 下载失败事件能力。            |
-| `"clipboard_text_received"`  | 剪贴板文本返回事件能力。      |
+| `"fullscreen_changed"`        | fullscreen 状态变化事件能力。 |
+| `"fullscreen_failed"`         | fullscreen 失败事件能力。     |
+| `"download_file_progress"`    | 下载进度事件能力。            |
+| `"download_file_success"`     | 下载成功事件能力。            |
+| `"download_file_fail"`        | 下载失败事件能力。            |
+| `"clipboard_text_received"`   | 剪贴板文本返回事件能力。      |
 
 示例：
 
@@ -1234,7 +1234,7 @@ window.__tgg_emit(eventName: TggEventName | string, payload?: unknown): void
 
 | 参数        | 类型                     | 必填 | 说明                                       |
 | ----------- | ------------------------ | ---- | ------------------------------------------ |
-| `eventName` | `TggEventName \| string` | 是   | 事件名，例如 `"back_button_clicked"`。       |
+| `eventName` | `TggEventName \| string` | 是   | 事件名，例如 `"back_button_clicked"`。     |
 | `payload`   | `unknown`                | 否   | 事件数据。返回按钮事件通常不需要 payload。 |
 
 返回值：

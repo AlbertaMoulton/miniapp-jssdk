@@ -74,5 +74,10 @@ export const API_ITEMS = [
     kind: "event",
   },
   { id: "fullscreen_failed", group: "device", title: "fullscreen_failed", kind: "event" },
-  { id: "clipboard_text_received", group: "device", title: "clipboard_text_received", kind: "event" },
+  {
+    id: "clipboard_text_received",
+    group: "device",
+    title: "clipboard_text_received",
+    kind: "event",
+  },
 ];

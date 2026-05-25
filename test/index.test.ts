@@ -1119,10 +1119,13 @@ test("downloadFile starts a native download task and returns task controls", asy
     },
   });
 
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("download_file_success", {
-    taskId: "tgg_download_1",
-    tempFilePath: "/tmp/report.pdf",
-  });
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)(
+    "download_file_success",
+    {
+      taskId: "tgg_download_1",
+      tempFilePath: "/tmp/report.pdf",
+    },
+  );
 
   expect(success).toHaveBeenCalledWith({ tempFilePath: "/tmp/report.pdf" });
   expect(complete).toHaveBeenCalledWith({ errMsg: "downloadFile:ok" });
