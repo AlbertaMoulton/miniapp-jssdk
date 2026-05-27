@@ -38,6 +38,7 @@ const eventReceivers = new WeakMap<
   MiniAppSDK,
   (eventName: TggEventName, payload?: unknown) => void
 >();
+const eventHandlerCheckers = new WeakMap<MiniAppSDK, (eventName: string) => boolean>();
 
 export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "init" },
@@ -149,6 +150,10 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
 
   const offEvent = (eventName: TggEventName, callback: (payload?: unknown) => void): void => {
     eventHandlers.get(eventName)?.delete(callback);
+  };
+
+  const hasEventHandlers = (eventName: string): boolean => {
+    return (eventHandlers.get(eventName as TggEventName)?.size ?? 0) > 0;
   };
 
   const receiveEvent = (eventName: TggEventName, payload?: unknown): void => {
@@ -366,6 +371,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
   };
 
   eventReceivers.set(sdk, receiveEvent);
+  eventHandlerCheckers.set(sdk, hasEventHandlers);
   return sdk;
 };
 
@@ -375,6 +381,10 @@ export const receiveMiniAppSDKEvent = (
   payload?: unknown,
 ): void => {
   eventReceivers.get(sdk)?.(eventName, payload);
+};
+
+export const hasMiniAppSDKEventHandlers = (sdk: MiniAppSDK, eventName: string): boolean => {
+  return eventHandlerCheckers.get(sdk)?.(eventName) ?? false;
 };
 
 const settleDownloadFileSuccess = (

@@ -1,6 +1,7 @@
 export const DEFAULT_NATIVE_HANDLER_NAME = "nativeBridge";
 export const TGG_GLOBAL_NAME = "tgg";
 export const TGG_EVENT_GLOBAL_NAME = "__tgg_emit";
+export const TGG_HAS_EVENT_HANDLERS_GLOBAL_NAME = "__tgg_has_event_handlers";
 export const REQUEST_ID_PREFIX = "tgg_req_";
 export const SDK_NOT_INJECTED_MESSAGE =
   "[Teamgaga] window.tgg is not injected. Please run inside Teamgaga App.";

@@ -286,16 +286,25 @@ The runtime performs local checks before native calls:
 
 ### Back button click events
 
-When the user taps the back button in the navigation bar, the Flutter host should
-notify the JS runtime by calling `window.__tgg_emit("back_button_clicked")`.
-This is a host-only runtime entrypoint. The SDK's
-`BackButton.onClick(cb)` handlers will fire in response:
+When the user performs a host back action, the Flutter host should first check
+whether the MiniApp has registered a back handler. If it has, notify the JS
+runtime by calling `window.__tgg_emit("back_button_clicked")`. If it has not,
+fall back to the host's default WebView/page navigation behavior.
+`window.__tgg_emit` and `window.__tgg_has_event_handlers` are host-only runtime
+entrypoints. The SDK's `BackButton.onClick(cb)` handlers will fire in response:
 
 ```dart
-// Flutter, on back button tap
-controller.evaluateJavascript(
-  source: 'window.__tgg_emit("back_button_clicked")',
+final handledByMiniApp = await controller.runJavaScriptReturningResult(
+  'Boolean(window.__tgg_has_event_handlers && window.__tgg_has_event_handlers("back_button_clicked"))',
 );
+
+if (handledByMiniApp == true) {
+  await controller.runJavaScript('window.__tgg_emit("back_button_clicked")');
+} else if (await controller.canGoBack()) {
+  await controller.goBack();
+} else {
+  // Pop the host page when appropriate.
+}
 ```
 
 See the [BackButton event example](#mini-app-usage) above for the developer-side

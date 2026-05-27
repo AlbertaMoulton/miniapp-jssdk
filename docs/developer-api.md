@@ -1246,9 +1246,47 @@ window.__tgg_emit(eventName: TggEventName | string, payload?: unknown): void
 Flutter 示例：
 
 ```dart
-controller.evaluateJavascript(
-  source: 'window.__tgg_emit("back_button_clicked")',
+await controller.runJavaScript('window.__tgg_emit("back_button_clicked")');
+```
+
+### `window.__tgg_has_event_handlers(eventName)`
+
+```ts
+window.__tgg_has_event_handlers(eventName: TggEventName | string): boolean
+```
+
+使用场景：
+
+- Flutter Host 在处理系统返回、页面返回或原生返回按钮时，先判断小程序是否已经接管某个 runtime 事件。
+- 例如 `back_button_clicked` 有监听器时，Host 应只派发事件给小程序；没有监听器时再执行 WebView 返回或页面关闭。
+- 这是 Host 专用入口；小程序业务代码不应直接调用。
+
+参数：
+
+| 参数        | 类型                     | 必填 | 说明                                   |
+| ----------- | ------------------------ | ---- | -------------------------------------- |
+| `eventName` | `TggEventName \| string` | 是   | 事件名，例如 `"back_button_clicked"`。 |
+
+返回值：
+
+| 类型      | 说明                                  |
+| --------- | ------------------------------------- |
+| `boolean` | `true` 表示该事件当前存在已注册监听。 |
+
+Flutter 返回意图示例：
+
+```dart
+final handledByMiniApp = await controller.runJavaScriptReturningResult(
+  'Boolean(window.__tgg_has_event_handlers && window.__tgg_has_event_handlers("back_button_clicked"))',
 );
+
+if (handledByMiniApp == true) {
+  await controller.runJavaScript('window.__tgg_emit("back_button_clicked")');
+} else if (await controller.canGoBack()) {
+  await controller.goBack();
+} else {
+  // Pop the host page when appropriate.
+}
 ```
 
 类型：

@@ -47,6 +47,7 @@ afterEach(() => {
   vi.useRealTimers();
   Reflect.deleteProperty(testGlobal, "tgg");
   Reflect.deleteProperty(testGlobal, "__tgg_emit");
+  Reflect.deleteProperty(testGlobal, "__tgg_has_event_handlers");
   Reflect.deleteProperty(testGlobal, "__tgg_resolve");
   Reflect.deleteProperty(testGlobal, "flutter_inappwebview");
   Reflect.deleteProperty(testGlobal, "nativeBridge");
@@ -911,6 +912,73 @@ test("BackButton onClick fires through window.__tgg_emit", () => {
   (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("back_button_clicked");
 
   expect(handler).toHaveBeenCalledOnce();
+});
+
+test("window.__tgg_has_event_handlers reports registered BackButton handlers", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const handler = vi.fn();
+  const hasEventHandlers = testGlobal.__tgg_has_event_handlers as (eventName: string) => boolean;
+
+  expect(hasEventHandlers).toEqual(expect.any(Function));
+  expect(hasEventHandlers("back_button_clicked")).toBe(false);
+
+  runtime.BackButton.onClick(handler);
+
+  expect(hasEventHandlers("back_button_clicked")).toBe(true);
+
+  runtime.BackButton.offClick(handler);
+
+  expect(hasEventHandlers("back_button_clicked")).toBe(false);
+});
+
+test("window.__tgg_has_event_handlers keeps reporting true while any handler remains", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const handler1 = vi.fn();
+  const handler2 = vi.fn();
+  const hasEventHandlers = testGlobal.__tgg_has_event_handlers as (eventName: string) => boolean;
+
+  runtime.BackButton.onClick(handler1);
+  runtime.BackButton.onClick(handler2);
+  runtime.BackButton.offClick(handler1);
+
+  expect(hasEventHandlers("back_button_clicked")).toBe(true);
+
+  runtime.BackButton.offClick(handler2);
+
+  expect(hasEventHandlers("back_button_clicked")).toBe(false);
+});
+
+test("window.__tgg_has_event_handlers reports generic runtime event handlers", () => {
+  testGlobal.flutter_inappwebview = {
+    async callHandler() {
+      return { success: true };
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+  const handler = vi.fn();
+  const hasEventHandlers = testGlobal.__tgg_has_event_handlers as (eventName: string) => boolean;
+
+  runtime.onEvent("theme_changed", handler);
+
+  expect(hasEventHandlers("theme_changed")).toBe(true);
+  expect(hasEventHandlers("unknown")).toBe(false);
+
+  runtime.offEvent("theme_changed", handler);
+
+  expect(hasEventHandlers("theme_changed")).toBe(false);
 });
 
 test("window.__tgg_emit dispatches generic CustomEvent subscribers", () => {

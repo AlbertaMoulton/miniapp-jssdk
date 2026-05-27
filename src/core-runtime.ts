@@ -1,6 +1,16 @@
-import { SDK_VERSION, TGG_EVENT_GLOBAL_NAME, TGG_GLOBAL_NAME } from "./constants";
+import {
+  SDK_VERSION,
+  TGG_EVENT_GLOBAL_NAME,
+  TGG_GLOBAL_NAME,
+  TGG_HAS_EVENT_HANDLERS_GLOBAL_NAME,
+} from "./constants";
 import { getRuntimeGlobal } from "./runtime";
-import { createMiniAppSDK, NATIVE_METHOD_CAPABILITIES, receiveMiniAppSDKEvent } from "./sdk";
+import {
+  createMiniAppSDK,
+  hasMiniAppSDKEventHandlers,
+  NATIVE_METHOD_CAPABILITIES,
+  receiveMiniAppSDKEvent,
+} from "./sdk";
 import type {
   InitData,
   MiniAppMethod,
@@ -104,6 +114,9 @@ export const createTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp => 
     syncCssVariables(runtimeMetadata);
     receiveMiniAppSDKEvent(sdk, eventName as TggEventName, payload);
     dispatchTggCustomEvent(eventName, payload);
+  };
+  global[TGG_HAS_EVENT_HANDLERS_GLOBAL_NAME] = (eventName: string) => {
+    return hasMiniAppSDKEventHandlers(sdk, eventName);
   };
 
   return runtime;
