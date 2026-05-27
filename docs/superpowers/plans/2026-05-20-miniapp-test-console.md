@@ -300,7 +300,7 @@ test("covers all approved P0 P1 P2 api items", () => {
       "downloadFile",
       "savePhoto",
       "saveVideo",
-      "clipboardTextReceived",
+      "clipboard_text_received",
     ]),
   );
 });
@@ -392,7 +392,12 @@ export const API_ITEMS = [
       url: "https://cdn-test.teamgaga.com/attachments/demo-video.mp4",
     },
   },
-  { id: "clipboardTextReceived", group: "device", title: "clipboardTextReceived", kind: "event" },
+  {
+    id: "clipboard_text_received",
+    group: "device",
+    title: "clipboard_text_received",
+    kind: "event",
+  },
 ];
 ```
 
@@ -613,16 +618,16 @@ const state = {
 };
 
 const EVENT_NAMES = [
-  "themeChanged",
-  "viewportChanged",
-  "safeAreaChanged",
-  "contentSafeAreaChanged",
-  "fullscreenChanged",
-  "backButtonClicked",
-  "downloadFileProgress",
-  "downloadFileSuccess",
-  "downloadFileFail",
-  "clipboardTextReceived",
+  "theme_changed",
+  "viewport_changed",
+  "safe_area_changed",
+  "content_safe_area_changed",
+  "fullscreen_changed",
+  "back_button_clicked",
+  "download_file_progress",
+  "download_file_success",
+  "download_file_fail",
+  "clipboard_text_received",
 ];
 ```
 

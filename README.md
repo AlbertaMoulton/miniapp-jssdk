@@ -143,19 +143,19 @@ tgg.offEvent("clipboard_text_received", onClipboard);
 Listen for Telegram-style environment changes:
 
 ```ts
-const onThemeChanged = () => {
+const handleThemeChanged = () => {
   console.log(tgg.colorScheme, tgg.themeParams.bg_color);
 };
 
-const onViewportChanged = () => {
+const handleViewportChanged = () => {
   console.log(tgg.viewportHeight, tgg.viewportStableHeight);
 };
 
-tgg.onEvent("theme_changed", onThemeChanged);
-tgg.onEvent("viewport_changed", onViewportChanged);
+tgg.onEvent("theme_changed", handleThemeChanged);
+tgg.onEvent("viewport_changed", handleViewportChanged);
 
-tgg.offEvent("theme_changed", onThemeChanged);
-tgg.offEvent("viewport_changed", onViewportChanged);
+tgg.offEvent("theme_changed", handleThemeChanged);
+tgg.offEvent("viewport_changed", handleViewportChanged);
 ```
 
 For explicit access:

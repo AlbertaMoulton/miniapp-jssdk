@@ -154,7 +154,7 @@ test("BackButton onClick fires through window.__tgg_emit", () => {
   const handler = vi.fn();
   runtime.BackButton.onClick(handler);
 
-  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("backButtonClicked");
+  (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("back_button_clicked");
 
   expect(handler).toHaveBeenCalledOnce();
 });
@@ -258,12 +258,13 @@ export type TggRuntimeOptions = MiniAppSDKOptions & {
 };
 ```
 
-- [ ] Update `MiniAppSDK` and `TggWebApp` to include:
+- [ ] Update `MiniAppSDK` and `TggWebApp` to include only the public SDK surface. Keep bridge invocation and native event dispatch internal:
 
 ```ts
-invoke<T>(method: MiniAppMethod, params?: Record<string, unknown>): Promise<T>;
 canIUse(capability: string): boolean;
-receiveEvent(eventName: TggEventName, payload?: unknown): void;
+isVersionAtLeast(version: string): boolean;
+onEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void;
+offEvent(eventName: TggEventName, callback: (payload?: unknown) => void): void;
 ```
 
 - [ ] Add global typing:
@@ -441,8 +442,8 @@ const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "getSystemInfo" },
   { name: "getCommunityId" },
   { name: "getCommunityInfo" },
-  { name: "themeChanged" },
-  { name: "backButtonClicked" },
+  { name: "theme_changed" },
+  { name: "back_button_clicked" },
 ];
 ```
 
@@ -491,9 +492,9 @@ const invoke = <T>(method: MiniAppMethod, params?: Record<string, unknown>): Pro
 };
 ```
 
-- [ ] Update returned SDK object to expose `invoke`, `canIUse`, high-level methods through `invoke`, and no `resolve`/`reject`/`bridgeName`.
+- [ ] Keep `invoke` internal to `createMiniAppSDK`, expose `canIUse`, and implement high-level methods through the internal invoker. Do not expose `resolve`/`reject`/`bridgeName` or `receiveEvent`.
 
-- [ ] Keep `receiveEvent` and BackButton listener behavior unchanged except that it now lives on a runtime without callback methods.
+- [ ] Keep BackButton listener behavior unchanged. Native event dispatch should use an internal receiver rather than a public `runtime.receiveEvent(...)` method.
 
 - [ ] Run `pnpm test test/index.test.ts`.
       Expected: bridge and capability tests pass; `createTggRuntime` and `__tgg_emit` tests still fail until runtime install is updated.
@@ -524,7 +525,7 @@ const runtime: TggWebApp = {
 
 ```ts
 global[TGG_EVENT_GLOBAL_NAME] = (eventName: string, payload?: unknown) => {
-  runtime.receiveEvent(eventName as TggEventName, payload);
+  receiveMiniAppSDKEvent(sdk, eventName as TggEventName, payload);
   dispatchTggCustomEvent(eventName, payload);
 };
 ```
@@ -610,7 +611,7 @@ Flutter emits events back to H5 with `evaluateJavascript`:
 
 ```dart
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("backButtonClicked")',
+  source: 'window.__tgg_emit("back_button_clicked")',
 );
 ```
 

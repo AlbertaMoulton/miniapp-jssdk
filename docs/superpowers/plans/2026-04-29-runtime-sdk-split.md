@@ -4,7 +4,7 @@
 
 **Goal:** Split the package surface into an injected `core.js` runtime and a developer-facing TypeScript SDK proxy.
 
-**Architecture:** `core.js` mounts `window.tgg` and owns bridge calls, callbacks, events, readiness, versions, and UI APIs. The npm SDK exports types, `getTgg()`, and a typed `tgg` proxy that forwards to the injected runtime without creating it.
+**Architecture:** `core.js` mounts `window.tgg` and owns bridge calls, internal event dispatch, readiness, versions, environment state, and UI APIs. The npm SDK exports types, `getTgg()`, and a typed `tgg` proxy that forwards to the injected runtime without creating it.
 
 **Tech Stack:** TypeScript, Rollup, vite-plus tests, Flutter WebView JavaScriptChannel.
 
@@ -18,7 +18,7 @@
 - Modify: `test/package.test.ts`
 
 - [ ] Add tests proving `getTgg()` returns `window.tgg`, `tgg` proxies calls to `window.tgg`, and both fail clearly when the runtime is not injected.
-- [ ] Add tests proving `createTggRuntime()` mounts `window.tgg`, sends invoke messages through `TeamgagaBridge.postMessage`, resolves callbacks, exposes `ready`, `setTitle`, `setHeaderColor`, `BackButton`, and `canIUse`.
+- [ ] Add tests proving `createTggRuntime()` mounts `window.tgg`, sends invoke messages through `flutter_inappwebview.callHandler(...)` or `nativeBridge.postMessage(...)`, resolves `nativeBridge` responses through `window.__tgg_resolve`, exposes `ready`, `setHeaderColor`, `BackButton`, and `canIUse`.
 - [ ] Run `pnpm test` and confirm the new tests fail because the runtime split does not exist yet.
 
 ### Task 2: Implement Runtime Boundary
@@ -33,8 +33,8 @@
 - Modify: `src/index.ts`
 
 - [ ] Add public `TggWebApp` types and bridge method/event types.
-- [ ] Add `createTggRuntime()` that mounts `window.tgg` and uses `TeamgagaBridge` for native calls.
-- [ ] Keep existing legacy API helpers where practical, but route the default developer experience through `getTgg()` and `tgg`.
+- [ ] Add `createTggRuntime()` that mounts `window.tgg` and uses the supported Flutter/WebView bridge transports for native calls.
+- [ ] Do not keep legacy API helpers or public internal bridge methods; route the developer experience through high-level APIs, `onEvent` / `offEvent`, `getTgg()`, and `tgg`.
 - [ ] Add a core entry that auto-installs the runtime when bundled as `dist/core.js`.
 
 ### Task 3: Build And Package Outputs

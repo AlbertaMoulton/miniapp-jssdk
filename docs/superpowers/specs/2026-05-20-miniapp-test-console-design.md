@@ -8,7 +8,7 @@
 - UI API：`setHeaderColor`、`BackButton.show/hide`
 - 用户与业务 API：`getOauthCode`、`getUserId`、`getUserInfo`、`getCommunityId`、`getCommunityInfo`
 - 系统与设备能力：`getSystemInfo`、`downloadFile`、`savePhoto`、`saveVideo`
-- 运行时事件：`themeChanged`、`viewportChanged`、`safeAreaChanged`、`contentSafeAreaChanged`、`fullscreenChanged`、`backButtonClicked`、`downloadFile*`、`clipboardTextReceived`
+- 运行时事件：`theme_changed`、`viewport_changed`、`safe_area_changed`、`content_safe_area_changed`、`fullscreen_changed`、`back_button_clicked`、`download_file_*`、`clipboard_text_received`
 - CSS 变量同步：`--tgg-*`
 
 当前仓库缺少一个面向 TeamGaga App 真机环境的统一测试页面，导致每次联调都需要临时拼接 demo、手写调用脚本或依赖业务页面顺带验证。这样的问题是：
@@ -44,7 +44,7 @@
   - `downloadFile`
   - `savePhoto`
   - `saveVideo`
-  - `clipboardTextReceived`
+  - `clipboard_text_received`
   - 安全区与 viewport 可视化实验区
 
 控制台必须满足以下使用目标：
@@ -216,7 +216,7 @@
 - `downloadFile`
 - `savePhoto`
 - `saveVideo`
-- `clipboardTextReceived`
+- `clipboard_text_received`
 
 `downloadFile` 需要完整展示生命周期：
 
@@ -233,7 +233,7 @@
 
 `savePhoto` 和 `saveVideo` 都需要内置可直接点击测试的远程素材 URL，避免真机测试时还要额外准备资源。
 
-`clipboardTextReceived` 使用事件监听模式展示最近一次接收到的文本内容和接收时间。
+`clipboard_text_received` 使用事件监听模式展示最近一次接收到的文本内容和接收时间。
 
 ### 5. 事件与日志区
 
@@ -241,16 +241,16 @@
 
 事件监听覆盖：
 
-- `themeChanged`
-- `viewportChanged`
-- `safeAreaChanged`
-- `contentSafeAreaChanged`
-- `fullscreenChanged`
-- `backButtonClicked`
-- `downloadFileProgress`
-- `downloadFileSuccess`
-- `downloadFileFail`
-- `clipboardTextReceived`
+- `theme_changed`
+- `viewport_changed`
+- `safe_area_changed`
+- `content_safe_area_changed`
+- `fullscreen_changed`
+- `back_button_clicked`
+- `download_file_progress`
+- `download_file_success`
+- `download_file_fail`
+- `clipboard_text_received`
 
 额外监听：
 
@@ -299,7 +299,7 @@
 - 使用安全区变量的 padding 演示
 - 使用背景色变量的容器示例
 
-这个区块必须在收到 `themeChanged`、`viewportChanged`、`safeAreaChanged`、`contentSafeAreaChanged`、`fullscreenChanged` 事件后自动刷新。
+这个区块必须在收到 `theme_changed`、`viewport_changed`、`safe_area_changed`、`content_safe_area_changed`、`fullscreen_changed` 事件后自动刷新。
 
 ### 7. 安全区与视口实验区
 
@@ -489,7 +489,7 @@
   - `downloadFile` 进度、成功、失败、abort
   - `savePhoto` 返回结果正确
   - `saveVideo` 返回结果正确
-  - `clipboardTextReceived` 能收到宿主事件
+  - `clipboard_text_received` 能收到宿主事件
   - 主题变化或宿主布局变化后，CSS 变量区同步更新
 - 普通浏览器环境
   - 明确提示未注入

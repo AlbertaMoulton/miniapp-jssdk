@@ -450,20 +450,20 @@ TeamGaga 与 Telegram Mini Apps 保持一致：事件通过 `tgg.onEvent(eventNa
 示例：
 
 ```ts
-const onThemeChanged = () => {
+const handleThemeChanged = () => {
   document.body.dataset.theme = tgg.colorScheme;
   console.log(tgg.themeParams.bg_color);
 };
 
-const onViewportChanged = () => {
+const handleViewportChanged = () => {
   console.log(tgg.viewportHeight, tgg.viewportStableHeight);
 };
 
-tgg.onEvent("theme_changed", onThemeChanged);
-tgg.onEvent("viewport_changed", onViewportChanged);
+tgg.onEvent("theme_changed", handleThemeChanged);
+tgg.onEvent("viewport_changed", handleViewportChanged);
 
-tgg.offEvent("theme_changed", onThemeChanged);
-tgg.offEvent("viewport_changed", onViewportChanged);
+tgg.offEvent("theme_changed", handleThemeChanged);
+tgg.offEvent("viewport_changed", handleViewportChanged);
 ```
 
 常用事件：

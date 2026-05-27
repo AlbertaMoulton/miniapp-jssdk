@@ -2,10 +2,10 @@
 
 ## Goal
 
-Refactor the SDK around a clean Flutter InAppWebView miniapp container protocol.
-This is a from-zero-to-one container implementation, so the code should not keep
-legacy `TeamgagaBridge.postMessage` behavior, callback-id response handling, or
-compatibility branches.
+Refactor the SDK around a clean Flutter/WebView miniapp container protocol. This
+is a from-zero-to-one container implementation, so the code should not keep
+legacy `TeamgagaBridge.postMessage` behavior, callback-id response handling,
+public internal bridge methods, or compatibility branches.
 
 The target split is:
 
@@ -15,17 +15,16 @@ The target split is:
 - `@teamgaga/miniapp-jssdk` is the developer-facing TypeScript SDK. It provides
   types, helpers, and a typed proxy to the injected runtime.
 - Flutter owns native capability execution through
-  `window.flutter_inappwebview.callHandler("nativeBridge", payload)` and pushes
-  events to H5 with `evaluateJavascript`.
+  `window.flutter_inappwebview.callHandler("nativeBridge", payload)` or
+  `window.nativeBridge.postMessage(JSON.stringify(payload))` and pushes events
+  to H5 with `evaluateJavascript`.
 
 ## Non-Goals
 
 - Do not support `TeamgagaBridge.postMessage`.
 - Do not preserve callback ids such as `tgg_cb_1`.
-- Do not use `postMessage` as the H5-to-Flutter bridge.
-- Do not add iframe sandbox transport in this refactor. It can be introduced
-  later as a separate web-internal transport if the product needs sandboxed
-  miniapps.
+- Do not use legacy `TeamgagaBridge.postMessage`.
+- Do not add iframe sandbox transport in this refactor.
 
 ## Architecture
 
@@ -36,8 +35,9 @@ Miniapp H5
   -> @teamgaga/miniapp-jssdk
   -> window.tgg
   -> core.js protocol runtime
-  -> FlutterInAppWebViewTransport
+  -> FlutterInAppWebViewTransport or WebViewFlutterTransport
   -> window.flutter_inappwebview.callHandler("nativeBridge", request)
+     or window.nativeBridge.postMessage(JSON.stringify(request))
   -> Flutter native handler
 ```
 
@@ -57,14 +57,19 @@ sandbox communication, but it is not part of the current bridge protocol.
 
 `core.js` should mount `window.tgg` at document start.
 
-`window.tgg` should expose:
+`window.tgg` should expose only the public runtime surface:
 
-- `invoke(method, params?)`
 - high-level API methods such as `ready`, `close`, `getUserInfo`,
-  `getSystemInfo`, and `BackButton.show`
-- `canIUse(capability)`
-- version metadata: `version`, `sdkVersion`, `appVersion`, `platform`
-- event APIs already present on the SDK, including `BackButton.onClick`
+  `getSystemInfo`, `readTextFromClipboard`, and `BackButton.show`
+- `canIUse(capability)` and `isVersionAtLeast(version)`
+- event APIs: `onEvent(eventName, callback)`, `offEvent(eventName, callback)`,
+  and `BackButton.onClick`
+- version and environment metadata: `version`, `sdkVersion`, `appVersion`,
+  `platform`, `colorScheme`, `themeParams`, `viewportHeight`,
+  `viewportStableHeight`, `safeAreaInset`, `contentSafeAreaInset`
+
+`invoke` and native event dispatch are internal implementation details and
+should not be exposed on `window.tgg`.
 
 `core.js` should also mount a host-only global:
 
@@ -76,10 +81,12 @@ Flutter to call private SDK internals.
 
 ## H5 To Flutter Protocol
 
-All native calls should go through:
+Native calls should go through the best available host bridge:
 
 ```ts
 window.flutter_inappwebview.callHandler("nativeBridge", request);
+// or
+window.nativeBridge.postMessage(JSON.stringify(request));
 ```
 
 The request shape should be:
@@ -121,8 +128,8 @@ but the documented Flutter contract should be the `success/data/error` envelope.
 Flutter should emit events with `evaluateJavascript`:
 
 ```js
-window.__tgg_emit("backButtonClicked", undefined);
-window.__tgg_emit("themeChanged", { colorScheme: "dark" });
+window.__tgg_emit("back_button_clicked", undefined);
+window.__tgg_emit("theme_changed", { colorScheme: "dark" });
 ```
 
 The runtime should:
@@ -223,7 +230,7 @@ Tests should cover:
 - successful native response normalization.
 - native error response normalization.
 - missing Flutter bridge rejection.
-- `BackButton.onClick` fires through `window.__tgg_emit("backButtonClicked")`.
+- `BackButton.onClick` fires through `window.__tgg_emit("back_button_clicked")`.
 - `canIUse` respects known capabilities, app version, and enabled flags.
 - package exports still publish SDK and core bundles.
 
