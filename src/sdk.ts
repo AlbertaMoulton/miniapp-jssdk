@@ -112,6 +112,8 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     ]),
   );
   let backButtonVisible = false;
+  let backButtonDesiredVisible = false;
+  let backButtonSyncPromise: Promise<void> | undefined;
   const eventHandlers = new Map<TggEventName, Set<(payload?: unknown) => void>>();
   const downloadTasks = new Map<string, DownloadTaskState>();
   let downloadTaskSequence = 0;
@@ -199,6 +201,30 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     }
 
     return invoke<void>("setHeaderColor", { color });
+  };
+
+  const syncBackButtonVisibility = async (): Promise<void> => {
+    while (backButtonVisible !== backButtonDesiredVisible) {
+      const nextVisible = backButtonDesiredVisible;
+      await invoke<void>(nextVisible ? "BackButton.show" : "BackButton.hide");
+      backButtonVisible = nextVisible;
+    }
+  };
+
+  const setBackButtonVisible = (visible: boolean): Promise<void> => {
+    backButtonDesiredVisible = visible;
+
+    if (backButtonVisible === visible && !backButtonSyncPromise) {
+      return Promise.resolve();
+    }
+
+    if (!backButtonSyncPromise) {
+      backButtonSyncPromise = syncBackButtonVisibility().finally(() => {
+        backButtonSyncPromise = undefined;
+      });
+    }
+
+    return backButtonSyncPromise;
   };
 
   const init = async (): Promise<InitData> => {
@@ -345,22 +371,8 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
       get isVisible() {
         return backButtonVisible;
       },
-      async show() {
-        if (backButtonVisible) {
-          return;
-        }
-
-        await invoke<void>("BackButton.show");
-        backButtonVisible = true;
-      },
-      async hide() {
-        if (!backButtonVisible) {
-          return;
-        }
-
-        await invoke<void>("BackButton.hide");
-        backButtonVisible = false;
-      },
+      show: () => setBackButtonVisible(true),
+      hide: () => setBackButtonVisible(false),
       onClick(cb: () => void) {
         onEvent(BACK_BUTTON_CLICKED_EVENT, cb);
       },

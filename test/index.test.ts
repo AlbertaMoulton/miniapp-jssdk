@@ -1135,6 +1135,39 @@ test("BackButton show and hide skip duplicate native calls", async () => {
   expect(calls.map((call) => call.payload.method)).toEqual(["BackButton.show", "BackButton.hide"]);
 });
 
+test("BackButton hide after pending show still notifies native", async () => {
+  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
+  let resolveShow: ((value: unknown) => void) | undefined;
+
+  testGlobal.flutter_inappwebview = {
+    callHandler(handlerName: string, payload: unknown) {
+      calls.push({ handlerName, payload: payload as Record<string, unknown> });
+
+      if ((payload as Record<string, unknown>).method === "BackButton.show") {
+        return new Promise((resolve) => {
+          resolveShow = resolve;
+        });
+      }
+
+      return Promise.resolve({ success: true });
+    },
+  } satisfies TestFlutterBridge;
+
+  const runtime = createTggRuntime();
+
+  const showPromise = runtime.BackButton.show();
+  const hidePromise = runtime.BackButton.hide();
+
+  expect(calls.map((call) => call.payload.method)).toEqual(["BackButton.show"]);
+
+  resolveShow?.({ success: true });
+  await expect(showPromise).resolves.toBeUndefined();
+  await expect(hidePromise).resolves.toBeUndefined();
+
+  expect(calls.map((call) => call.payload.method)).toEqual(["BackButton.show", "BackButton.hide"]);
+  expect(runtime.BackButton.isVisible).toBe(false);
+});
+
 test("setHeaderColor rejects invalid color values before native calls", async () => {
   const calls: unknown[] = [];
   testGlobal.flutter_inappwebview = {
