@@ -703,15 +703,8 @@ test("runtime exposes Telegram-style environment properties after init", async (
             sdkVersion: "0.2.0",
             colorScheme: "dark",
             platform: "android",
-            themeParams: {
-              bg_color: "#101010",
-              secondary_bg_color: "#202020",
-              text_color: "#ffffff",
-            },
             viewportHeight: 712,
             viewportStableHeight: 680,
-            headerColor: "#123456",
-            backgroundColor: "#654321",
             isFullscreen: true,
             safeAreaInset: {
               top: 44,
@@ -739,15 +732,8 @@ test("runtime exposes Telegram-style environment properties after init", async (
   expect(runtime.version).toBe(SDK_VERSION);
   expect(runtime.platform).toBe("android");
   expect(runtime.colorScheme).toBe("dark");
-  expect(runtime.themeParams).toEqual({
-    bg_color: "#101010",
-    secondary_bg_color: "#202020",
-    text_color: "#ffffff",
-  });
   expect(runtime.viewportHeight).toBe(712);
   expect(runtime.viewportStableHeight).toBe(680);
-  expect(runtime.headerColor).toBe("#123456");
-  expect(runtime.backgroundColor).toBe("#654321");
   expect(runtime.isFullscreen).toBe(true);
   expect(runtime.safeAreaInset).toEqual({
     top: 44,
@@ -774,15 +760,8 @@ test("runtime syncs Telegram-style CSS variables with --tgg prefix", async () =>
 
   createTggRuntime({
     colorScheme: "dark",
-    themeParams: {
-      bg_color: "#101010",
-      secondary_bg_color: "#202020",
-      text_color: "#ffffff",
-    },
     viewportHeight: 720,
     viewportStableHeight: 688,
-    headerColor: "#123456",
-    backgroundColor: "#654321",
     isFullscreen: true,
     safeAreaInset: {
       top: 44,
@@ -799,13 +778,8 @@ test("runtime syncs Telegram-style CSS variables with --tgg prefix", async () =>
   });
 
   expect(properties.get("--tgg-color-scheme")).toBe("dark");
-  expect(properties.get("--tgg-theme-bg-color")).toBe("#101010");
-  expect(properties.get("--tgg-theme-secondary-bg-color")).toBe("#202020");
-  expect(properties.get("--tgg-theme-text-color")).toBe("#ffffff");
   expect(properties.get("--tgg-viewport-height")).toBe("720px");
   expect(properties.get("--tgg-viewport-stable-height")).toBe("688px");
-  expect(properties.get("--tgg-header-color")).toBe("#123456");
-  expect(properties.get("--tgg-background-color")).toBe("#654321");
   expect(properties.get("--tgg-is-fullscreen")).toBe("1");
   expect(properties.get("--tgg-safe-area-inset-top")).toBe("44px");
   expect(properties.get("--tgg-safe-area-inset-right")).toBe("1px");
@@ -835,12 +809,6 @@ test("runtime updates environment properties and css variables from host events"
 
   (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("theme_changed", {
     colorScheme: "dark",
-    themeParams: {
-      bg_color: "#111111",
-      text_color: "#eeeeee",
-    },
-    headerColor: "#222222",
-    backgroundColor: "#333333",
   });
   (testGlobal.__tgg_emit as (eventName: string, payload?: unknown) => void)("viewport_changed", {
     height: 640,
@@ -866,14 +834,8 @@ test("runtime updates environment properties and css variables from host events"
   });
 
   expect(runtime.colorScheme).toBe("dark");
-  expect(runtime.themeParams).toEqual({
-    bg_color: "#111111",
-    text_color: "#eeeeee",
-  });
   expect(runtime.viewportHeight).toBe(640);
   expect(runtime.viewportStableHeight).toBe(620);
-  expect(runtime.headerColor).toBe("#222222");
-  expect(runtime.backgroundColor).toBe("#333333");
   expect(runtime.isFullscreen).toBe(true);
   expect(runtime.safeAreaInset).toEqual({
     top: 10,
@@ -888,9 +850,6 @@ test("runtime updates environment properties and css variables from host events"
     left: 17,
   });
   expect(properties.get("--tgg-color-scheme")).toBe("dark");
-  expect(properties.get("--tgg-theme-bg-color")).toBe("#111111");
-  expect(properties.get("--tgg-header-color")).toBe("#222222");
-  expect(properties.get("--tgg-background-color")).toBe("#333333");
   expect(properties.get("--tgg-viewport-height")).toBe("640px");
   expect(properties.get("--tgg-viewport-stable-height")).toBe("620px");
   expect(properties.get("--tgg-is-fullscreen")).toBe("1");

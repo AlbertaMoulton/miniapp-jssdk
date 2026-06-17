@@ -57,11 +57,11 @@ test("keeps api item config structurally valid", () => {
 });
 
 test("provides first-class presets for header color and version checks", () => {
-  const headerColor = API_ITEMS.find((item) => item.id === "setHeaderColor");
+  const setHeaderColorItem = API_ITEMS.find((item) => item.id === "setHeaderColor");
 
-  expect(headerColor?.presets).toEqual(["#18A0FB", "#101010", "#FFFFFF"]);
+  expect(setHeaderColorItem?.presets).toEqual(["#18A0FB", "#101010", "#FFFFFF"]);
   expect(VERSION_PRESETS).toEqual(["1.0.0", "2.0.0", "3.2.0"]);
-  expect(headerColor?.defaultParams).toEqual({ color: "#18A0FB" });
+  expect(setHeaderColorItem?.defaultParams).toEqual({ color: "#18A0FB" });
 });
 
 test("ships click-ready default params for device actions", () => {

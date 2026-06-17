@@ -135,7 +135,7 @@ Listen for Telegram-style environment changes:
 
 ```ts
 const handleThemeChanged = () => {
-  console.log(tgg.colorScheme, tgg.themeParams.bg_color);
+  console.log(tgg.colorScheme);
 };
 
 const handleViewportChanged = () => {
@@ -169,11 +169,8 @@ After `await tgg.init()`, both `initData` and `window.tgg` expose:
 - `version`
 - `platform`
 - `colorScheme`
-- `themeParams`
 - `viewportHeight`
 - `viewportStableHeight`
-- `headerColor`
-- `backgroundColor`
 - `isFullscreen`
 - `safeAreaInset`
 - `contentSafeAreaInset`
@@ -184,7 +181,6 @@ Example:
 await tgg.init();
 
 console.log(tgg.version, tgg.platform);
-console.log(tgg.themeParams.bg_color);
 console.log(tgg.viewportHeight, tgg.viewportStableHeight);
 console.log(tgg.safeAreaInset.bottom, tgg.contentSafeAreaInset.bottom);
 ```
@@ -193,11 +189,8 @@ The runtime also writes CSS custom properties to `document.documentElement.style
 with a `--tgg-` prefix so H5 can consume host state without waiting on JS glue:
 
 - `--tgg-color-scheme`
-- `--tgg-theme-*`
 - `--tgg-viewport-height`
 - `--tgg-viewport-stable-height`
-- `--tgg-header-color`
-- `--tgg-background-color`
 - `--tgg-is-fullscreen`
 - `--tgg-safe-area-inset-*`
 - `--tgg-content-safe-area-inset-*`
@@ -325,12 +318,6 @@ Recommended payloads:
 ```ts
 window.__tgg_emit("theme_changed", {
   colorScheme: "dark",
-  themeParams: {
-    bg_color: "#101010",
-    secondary_bg_color: "#202020",
-  },
-  headerColor: "#123456",
-  backgroundColor: "#654321",
 });
 
 window.__tgg_emit("viewport_changed", {

@@ -18,7 +18,6 @@ import type {
   TggColorScheme,
   TggEventName,
   TggRuntimeOptions,
-  ThemeParams,
   TggWebApp,
 } from "./types";
 
@@ -30,11 +29,8 @@ export const createTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp => 
     platform: options.platform ?? "web",
     sdkVersion: options.sdkVersion ?? SDK_VERSION,
     version: options.version ?? SDK_VERSION,
-    themeParams: normalizeThemeParams(options.themeParams),
     viewportHeight: normalizeDimension(options.viewportHeight),
     viewportStableHeight: normalizeDimension(options.viewportStableHeight),
-    headerColor: options.headerColor ?? "",
-    backgroundColor: options.backgroundColor ?? "",
     isFullscreen: options.isFullscreen ?? false,
     safeAreaInset: normalizeSafeAreaInset(options.safeAreaInset),
     contentSafeAreaInset: normalizeSafeAreaInset(options.contentSafeAreaInset),
@@ -44,11 +40,8 @@ export const createTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp => 
     platform: string;
     sdkVersion: string;
     version: string;
-    themeParams: ThemeParams;
     viewportHeight: number;
     viewportStableHeight: number;
-    headerColor: string;
-    backgroundColor: string;
     isFullscreen: boolean;
     safeAreaInset: SafeAreaInset;
     contentSafeAreaInset: SafeAreaInset;
@@ -81,20 +74,11 @@ export const createTggRuntime = (options: TggRuntimeOptions = {}): TggWebApp => 
     get version() {
       return runtimeMetadata.version;
     },
-    get themeParams() {
-      return runtimeMetadata.themeParams;
-    },
     get viewportHeight() {
       return runtimeMetadata.viewportHeight;
     },
     get viewportStableHeight() {
       return runtimeMetadata.viewportStableHeight;
-    },
-    get headerColor() {
-      return runtimeMetadata.headerColor;
-    },
-    get backgroundColor() {
-      return runtimeMetadata.backgroundColor;
     },
     get isFullscreen() {
       return runtimeMetadata.isFullscreen;
@@ -167,11 +151,8 @@ type RuntimeMetadata = {
   platform: string;
   sdkVersion: string;
   version: string;
-  themeParams: ThemeParams;
   viewportHeight: number;
   viewportStableHeight: number;
-  headerColor: string;
-  backgroundColor: string;
   isFullscreen: boolean;
   safeAreaInset: SafeAreaInset;
   contentSafeAreaInset: SafeAreaInset;
@@ -189,11 +170,8 @@ const applyInitData = (runtimeMetadata: RuntimeMetadata, initData: InitData): vo
   runtimeMetadata.colorScheme = initData.colorScheme;
   runtimeMetadata.platform = initData.platform;
   runtimeMetadata.sdkVersion = initData.sdkVersion;
-  runtimeMetadata.themeParams = normalizeThemeParams(initData.themeParams);
   runtimeMetadata.viewportHeight = normalizeDimension(initData.viewportHeight);
   runtimeMetadata.viewportStableHeight = normalizeDimension(initData.viewportStableHeight);
-  runtimeMetadata.headerColor = initData.headerColor ?? "";
-  runtimeMetadata.backgroundColor = initData.backgroundColor ?? "";
   runtimeMetadata.isFullscreen = initData.isFullscreen ?? false;
   runtimeMetadata.safeAreaInset = normalizeSafeAreaInset(initData.safeAreaInset);
   runtimeMetadata.contentSafeAreaInset = normalizeSafeAreaInset(initData.contentSafeAreaInset);
@@ -216,10 +194,6 @@ const applyRuntimeEvent = (
     if (colorScheme) {
       runtimeMetadata.colorScheme = colorScheme;
     }
-    runtimeMetadata.themeParams = normalizeThemeParams(payload.themeParams);
-    runtimeMetadata.headerColor = getString(payload.headerColor) ?? runtimeMetadata.headerColor;
-    runtimeMetadata.backgroundColor =
-      getString(payload.backgroundColor) ?? runtimeMetadata.backgroundColor;
     return;
   }
 
@@ -242,18 +216,6 @@ const applyRuntimeEvent = (
   if (eventName === "fullscreen_changed") {
     runtimeMetadata.isFullscreen = Boolean(payload.isFullscreen);
   }
-};
-
-const normalizeThemeParams = (value: unknown): ThemeParams => {
-  if (!isRecord(value)) {
-    return {};
-  }
-
-  return Object.fromEntries(
-    Object.entries(value).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    ),
-  );
 };
 
 const normalizeDimension = (value: unknown): number => {
@@ -285,16 +247,10 @@ const syncCssVariables = (runtimeMetadata: RuntimeMetadata): void => {
     "--tgg-viewport-stable-height",
     toPixelValue(runtimeMetadata.viewportStableHeight),
   );
-  root.setProperty("--tgg-header-color", runtimeMetadata.headerColor);
-  root.setProperty("--tgg-background-color", runtimeMetadata.backgroundColor);
   root.setProperty("--tgg-is-fullscreen", runtimeMetadata.isFullscreen ? "1" : "0");
 
   setInsetCssVariables(root, "--tgg-safe-area-inset", runtimeMetadata.safeAreaInset);
   setInsetCssVariables(root, "--tgg-content-safe-area-inset", runtimeMetadata.contentSafeAreaInset);
-
-  Object.entries(runtimeMetadata.themeParams).forEach(([key, value]) => {
-    root.setProperty(`--tgg-theme-${toKebabCase(key)}`, value);
-  });
 };
 
 const setInsetCssVariables = (
@@ -326,13 +282,8 @@ const getDocumentElementStyle = (): CSSStyleDeclarationLike | undefined => {
 
 const toPixelValue = (value: number): string => `${value}px`;
 
-const toKebabCase = (value: string): string => value.replaceAll("_", "-");
-
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
-
-const getString = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
 
 const getColorScheme = (value: unknown): TggColorScheme | undefined =>
   value === "light" || value === "dark" ? value : undefined;

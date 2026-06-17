@@ -21,8 +21,6 @@ const ENVIRONMENT_FIELDS = [
   "platform",
   "viewportHeight",
   "viewportStableHeight",
-  "headerColor",
-  "backgroundColor",
   "isFullscreen",
   "safeAreaInset",
   "contentSafeAreaInset",

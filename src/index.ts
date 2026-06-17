@@ -42,7 +42,6 @@ export type {
   SafeAreaInset,
   SaveMediaToAlbumOptions,
   SystemInfo,
-  ThemeParams,
   UserInfo,
   TggBackButton,
   TggCapability,

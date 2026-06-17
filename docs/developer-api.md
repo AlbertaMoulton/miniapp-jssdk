@@ -176,11 +176,8 @@ tgg.init(): Promise<InitData>
 | `sdkVersion`           | `string`                               | Native / 容器侧 SDK 版本。                     |
 | `colorScheme`          | `"light" \| "dark"`                    | 当前颜色模式。                                 |
 | `platform`             | `string`                               | 平台标识，例如 `"ios"`。                       |
-| `themeParams`          | `ThemeParams \| undefined`             | 当前主题参数，命名与 Telegram Mini Apps 对齐。 |
 | `viewportHeight`       | `number \| undefined`                  | 当前可用 viewport 高度。                       |
 | `viewportStableHeight` | `number \| undefined`                  | 稳定 viewport 高度。                           |
-| `headerColor`          | `string \| undefined`                  | 当前头部颜色。                                 |
-| `backgroundColor`      | `string \| undefined`                  | 当前背景色。                                   |
 | `isFullscreen`         | `boolean \| undefined`                 | 当前是否处于 fullscreen。                      |
 | `safeAreaInset`        | `SafeAreaInset \| undefined`           | 宿主安全区。                                   |
 | `contentSafeAreaInset` | `SafeAreaInset \| undefined`           | 内容安全区。                                   |
@@ -199,8 +196,8 @@ if (initData.launchContext?.communityId) {
 await tgg.ready();
 ```
 
-其中 `themeParams`、`viewportHeight`、`viewportStableHeight`、`safeAreaInset`
-和 `contentSafeAreaInset` 的语义参考 Telegram Mini Apps，便于 H5 直接复用同一套适配逻辑。
+其中 `viewportHeight`、`viewportStableHeight`、`safeAreaInset` 和
+`contentSafeAreaInset` 的语义参考 Telegram Mini Apps，便于 H5 直接复用同一套适配逻辑。
 
 ### `tgg.ready()`
 
@@ -414,7 +411,6 @@ TeamGaga 与 Telegram Mini Apps 保持一致：事件通过 `tgg.onEvent(eventNa
 ```ts
 const handleThemeChanged = () => {
   document.body.dataset.theme = tgg.colorScheme;
-  console.log(tgg.themeParams.bg_color);
 };
 
 const handleViewportChanged = () => {
@@ -434,7 +430,7 @@ tgg.offEvent("viewport_changed", handleViewportChanged);
 | ----------------------------- | ------------------------------------------------------------------ |
 | `"activated"`                 | 小程序变为活跃，可恢复轮询或刷新临时状态                           |
 | `"deactivated"`               | 小程序变为非活跃，可暂停轮询、视频或动画                           |
-| `"theme_changed"`             | 从 `tgg.colorScheme` 和 `tgg.themeParams` 读取最新主题             |
+| `"theme_changed"`             | 从 `tgg.colorScheme` 读取最新颜色模式                             |
 | `"viewport_changed"`          | 从 `tgg.viewportHeight` 和 `tgg.viewportStableHeight` 读取最新高度 |
 | `"safe_area_changed"`         | 从 `tgg.safeAreaInset` 读取最新安全区                              |
 | `"content_safe_area_changed"` | 从 `tgg.contentSafeAreaInset` 读取最新内容安全区                   |
@@ -1092,17 +1088,6 @@ tgg.colorScheme: "light" | "dark"
 - 读取宿主当前颜色模式。
 - 和 CSS 变量或业务主题系统做同步。
 
-### `tgg.themeParams`
-
-```ts
-tgg.themeParams: ThemeParams
-```
-
-使用场景：
-
-- 读取宿主下发的 Telegram 风格主题参数。
-- 对接 `bg_color`、`secondary_bg_color`、`text_color` 等颜色键。
-
 ### `tgg.viewportHeight`
 
 ```ts
@@ -1124,18 +1109,6 @@ tgg.viewportStableHeight: number
 
 - 获取稳定 viewport 高度。
 - 避免键盘、系统 UI 临时动画导致布局抖动。
-
-### `tgg.headerColor`
-
-```ts
-tgg.headerColor: string
-```
-
-### `tgg.backgroundColor`
-
-```ts
-tgg.backgroundColor: string
-```
 
 ### `tgg.isFullscreen`
 
@@ -1445,11 +1418,8 @@ createTggRuntime(options?: TggRuntimeOptions): TggWebApp
 | `sdkVersion`           | `string \| undefined`                      | SDK 版本。默认使用包内版本。                                        |
 | `version`              | `string \| undefined`                      | core runtime 版本。默认使用包内版本。                               |
 | `colorScheme`          | `"light" \| "dark" \| undefined`           | 初始颜色模式。                                                      |
-| `themeParams`          | `ThemeParams \| undefined`                 | 初始主题参数。                                                      |
 | `viewportHeight`       | `number \| undefined`                      | 初始 viewport 高度。                                                |
 | `viewportStableHeight` | `number \| undefined`                      | 初始稳定 viewport 高度。                                            |
-| `headerColor`          | `string \| undefined`                      | 初始头部颜色。                                                      |
-| `backgroundColor`      | `string \| undefined`                      | 初始背景色。                                                        |
 | `isFullscreen`         | `boolean \| undefined`                     | 初始 fullscreen 状态。                                              |
 | `safeAreaInset`        | `SafeAreaInset \| undefined`               | 初始安全区。                                                        |
 | `contentSafeAreaInset` | `SafeAreaInset \| undefined`               | 初始内容安全区。                                                    |
@@ -1460,11 +1430,8 @@ createTggRuntime(options?: TggRuntimeOptions): TggWebApp
 运行时还会同步写入 `document.documentElement.style`：
 
 - `--tgg-color-scheme`
-- `--tgg-theme-*`
 - `--tgg-viewport-height`
 - `--tgg-viewport-stable-height`
-- `--tgg-header-color`
-- `--tgg-background-color`
 - `--tgg-is-fullscreen`
 - `--tgg-safe-area-inset-*`
 - `--tgg-content-safe-area-inset-*`
@@ -1513,11 +1480,8 @@ type TggWebApp = MiniAppSDK & {
   readonly platform: string;
   readonly appVersion: string;
   readonly colorScheme: TggColorScheme;
-  readonly themeParams: ThemeParams;
   readonly viewportHeight: number;
   readonly viewportStableHeight: number;
-  readonly headerColor: string;
-  readonly backgroundColor: string;
   readonly isFullscreen: boolean;
   readonly safeAreaInset: SafeAreaInset;
   readonly contentSafeAreaInset: SafeAreaInset;
@@ -1563,12 +1527,6 @@ type TggCapability =
   | "download_file_success"
   | "download_file_fail"
   | "clipboard_text_received";
-```
-
-### `ThemeParams`
-
-```ts
-type ThemeParams = Record<string, string>;
 ```
 
 ### `SafeAreaInset`

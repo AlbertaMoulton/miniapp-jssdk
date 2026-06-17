@@ -590,14 +590,8 @@ class TeamGagaMiniAppDispatcher implements MiniAppNativeDispatcher {
           'sdkVersion': request.sdkVersion,
           'colorScheme': 'light',
           'platform': defaultTargetPlatform.name,
-          'themeParams': <String, dynamic>{
-            'bg_color': '#ffffff',
-            'secondary_bg_color': '#f5f5f5',
-          },
           'viewportHeight': 720.0,
           'viewportStableHeight': 688.0,
-          'headerColor': '#ffffff',
-          'backgroundColor': '#ffffff',
           'isFullscreen': false,
           'safeAreaInset': <String, dynamic>{
             'top': 47.0,
@@ -656,14 +650,8 @@ class TeamGagaMiniAppDispatcher implements MiniAppNativeDispatcher {
             'height': 2532,
           },
           'platformBrightness': 'light',
-          'themeParams': <String, dynamic>{
-            'bg_color': '#ffffff',
-            'secondary_bg_color': '#f5f5f5',
-          },
           'viewportHeight': 720.0,
           'viewportStableHeight': 688.0,
-          'headerColor': '#ffffff',
-          'backgroundColor': '#ffffff',
           'isFullscreen': false,
           'viewPadding': <String, dynamic>{
             'left': 0,
@@ -720,11 +708,8 @@ The current runtime tracks a Telegram-style environment model. Flutter should ke
 these fields current in both the `init` response and any later host events:
 
 - `colorScheme`
-- `themeParams`
 - `viewportHeight`
 - `viewportStableHeight`
-- `headerColor`
-- `backgroundColor`
 - `isFullscreen`
 - `safeAreaInset`
 - `contentSafeAreaInset`
@@ -733,7 +718,7 @@ When any of them change after startup, emit host events through `window.__tgg_em
 
 ```dart
 controller.evaluateJavascript(
-  source: 'window.__tgg_emit("theme_changed", {"colorScheme":"dark","themeParams":{"bg_color":"#101010"},"headerColor":"#123456","backgroundColor":"#654321"})',
+  source: 'window.__tgg_emit("theme_changed", {"colorScheme":"dark"})',
 );
 controller.evaluateJavascript(
   source: 'window.__tgg_emit("viewport_changed", {"height":720,"stableHeight":688})',
