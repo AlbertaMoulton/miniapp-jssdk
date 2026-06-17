@@ -103,14 +103,14 @@ test("passes invoke params to Flutter InAppWebView", async () => {
 
   const sdk = createMiniAppSDK();
 
-  await expect(sdk.setHeaderColor("bg_color")).resolves.toBeUndefined();
+  await expect(sdk.setHeaderColor("#18A0FB")).resolves.toBeUndefined();
   expect(calls[0]).toMatchObject({
     handlerName: "nativeBridge",
     payload: {
       id: expect.stringMatching(REQUEST_ID_PATTERN),
       method: "setHeaderColor",
       params: {
-        color: "bg_color",
+        color: "#18A0FB",
       },
     },
   });
@@ -1086,7 +1086,7 @@ test("invoke rejects locally when capability requires a newer app version", asyn
     capabilities: [{ name: "setHeaderColor", minAppVersion: "3.3.0" }],
   });
 
-  await expect(runtime.setHeaderColor("bg_color")).rejects.toMatchObject({
+  await expect(runtime.setHeaderColor("#18A0FB")).rejects.toMatchObject({
     code: "UNSUPPORTED_CAPABILITY",
   });
   expect(calls).toEqual([]);
@@ -1183,6 +1183,12 @@ test("setHeaderColor rejects invalid color values before native calls", async ()
     code: "INVALID_HEADER_COLOR",
   });
   await expect(runtime.setHeaderColor("#abc" as never)).rejects.toMatchObject({
+    code: "INVALID_HEADER_COLOR",
+  });
+  await expect(runtime.setHeaderColor("bg_color" as never)).rejects.toMatchObject({
+    code: "INVALID_HEADER_COLOR",
+  });
+  await expect(runtime.setHeaderColor("secondary_bg_color" as never)).rejects.toMatchObject({
     code: "INVALID_HEADER_COLOR",
   });
   expect(calls).toEqual([]);

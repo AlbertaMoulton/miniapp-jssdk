@@ -24,7 +24,7 @@ const initData = await tgg.init();
 console.log(initData.platform, initData.colorScheme);
 
 // 拉取业务数据并渲染页面。
-await tgg.setHeaderColor("bg_color");
+await tgg.setHeaderColor("#18A0FB");
 await tgg.ready();
 await tgg.close();
 ```
@@ -459,13 +459,13 @@ tgg.setHeaderColor(color: TggHeaderColor): Promise<void>
 使用场景：
 
 - 修改 App 原生导航栏颜色。
-- 让导航栏跟随小程序页面主题或品牌色。
+- 让导航栏使用小程序页面品牌色。
 
 参数：
 
-| 参数    | 类型             | 必填 | 说明                                                                                                |
-| ------- | ---------------- | ---- | --------------------------------------------------------------------------------------------------- |
-| `color` | `TggHeaderColor` | 是   | 导航栏颜色。`"bg_color"` 和 `"secondary_bg_color"` 表示使用当前主题色；`#RRGGBB` 形式表示指定颜色。 |
+| 参数    | 类型             | 必填 | 说明                                          |
+| ------- | ---------------- | ---- | --------------------------------------------- |
+| `color` | `TggHeaderColor` | 是   | 导航栏颜色。仅支持 `#RRGGBB` 形式的指定颜色。 |
 
 返回值：
 
@@ -475,25 +475,24 @@ tgg.setHeaderColor(color: TggHeaderColor): Promise<void>
 
 异常：
 
-- 当 `color` 不是 `"bg_color"`、`"secondary_bg_color"` 或 `#RRGGBB` 时，SDK 会在本地 reject，错误码为 `INVALID_HEADER_COLOR`。
+- 当 `color` 不是 `#RRGGBB` 时，SDK 会在本地 reject，错误码为 `INVALID_HEADER_COLOR`。
 
 示例：
 
 ```ts
-await tgg.setHeaderColor("bg_color");
 await tgg.setHeaderColor("#18A0FB");
 ```
 
 便捷函数：
 
 ```ts
-await setHeaderColor("secondary_bg_color");
+await setHeaderColor("#18A0FB");
 ```
 
 类型：
 
 ```ts
-type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
+type TggHeaderColor = `#${string}`;
 ```
 
 ## 返回按钮 API
@@ -952,7 +951,7 @@ tgg.canIUse(capability: string): boolean
 
 ```ts
 if (tgg.canIUse("setHeaderColor")) {
-  await tgg.setHeaderColor("bg_color");
+  await tgg.setHeaderColor("#18A0FB");
 }
 ```
 

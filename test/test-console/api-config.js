@@ -6,7 +6,7 @@ export const API_GROUPS = [
 
 export const VERSION_PRESETS = ["1.0.0", "2.0.0", "3.2.0"];
 
-export const HEADER_COLOR_PRESETS = ["bg_color", "secondary_bg_color", "#18A0FB"];
+export const HEADER_COLOR_PRESETS = ["#18A0FB", "#101010", "#FFFFFF"];
 
 export const API_ITEMS = [
   { id: "init", group: "lifecycle-ui", title: "init", kind: "method" },
@@ -18,7 +18,7 @@ export const API_ITEMS = [
     title: "setHeaderColor",
     kind: "method",
     presets: HEADER_COLOR_PRESETS,
-    defaultParams: { color: "bg_color" },
+    defaultParams: { color: "#18A0FB" },
   },
   { id: "backButtonShow", group: "lifecycle-ui", title: "BackButton.show", kind: "method" },
   { id: "backButtonHide", group: "lifecycle-ui", title: "BackButton.hide", kind: "method" },

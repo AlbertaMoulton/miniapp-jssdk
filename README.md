@@ -67,7 +67,7 @@ console.log(initData.platform, initData.colorScheme);
 console.log(initData.viewportHeight, initData.safeAreaInset?.bottom);
 
 // Fetch data and render the miniapp UI.
-await tgg.setHeaderColor("bg_color");
+await tgg.setHeaderColor("#18A0FB");
 tgg.BackButton.show();
 tgg.BackButton.onClick(() => {
   // Custom back navigation
@@ -270,7 +270,7 @@ The runtime performs local checks before native calls:
 
 - capability and permission checks through `tgg.canIUse(capability)`
 - App version checks through `tgg.isVersionAtLeast(version)`
-- header color validation for `"bg_color"`, `"secondary_bg_color"`, or `#RRGGBB`
+- header color validation for `#RRGGBB`
 - duplicate `BackButton.show()` / `BackButton.hide()` calls are skipped when the visible state is unchanged
 - file download progress and completion are delivered through `window.__tgg_emit`
 - clipboard text results are delivered through `window.__tgg_emit`

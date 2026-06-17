@@ -486,8 +486,7 @@ const parseVersion = (version: string): number[] =>
     .split(".")
     .map((part) => Number.parseInt(part, 10) || 0);
 
-const isHeaderColor = (color: string): color is TggHeaderColor =>
-  color === "bg_color" || color === "secondary_bg_color" || /^#[0-9a-f]{6}$/i.test(color);
+const isHeaderColor = (color: string): color is TggHeaderColor => /^#[0-9a-f]{6}$/i.test(color);
 
 export const getTgg = (): TggWebApp => {
   const runtime = getRuntimeGlobal()[TGG_GLOBAL_NAME] as TggWebApp | undefined;

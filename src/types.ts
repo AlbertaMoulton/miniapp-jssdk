@@ -16,7 +16,7 @@ export type MiniAppMethod =
   | "saveMediaToAlbum"
   | "readTextFromClipboard";
 
-export type TggHeaderColor = "bg_color" | "secondary_bg_color" | `#${string}`;
+export type TggHeaderColor = `#${string}`;
 
 export type TggColorScheme = "light" | "dark";
 
