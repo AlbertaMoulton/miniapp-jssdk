@@ -170,18 +170,18 @@ tgg.init(): Promise<InitData>
 
 `InitData` 字段：
 
-| 字段                   | 类型                                   | 说明                                           |
-| ---------------------- | -------------------------------------- | ---------------------------------------------- |
-| `appVersion`           | `string`                               | TeamGaga App 版本。                            |
-| `sdkVersion`           | `string`                               | Native / 容器侧 SDK 版本。                     |
-| `colorScheme`          | `"light" \| "dark"`                    | 当前颜色模式。                                 |
-| `platform`             | `string`                               | 平台标识，例如 `"ios"`。                       |
-| `viewportHeight`       | `number \| undefined`                  | 当前可用 viewport 高度。                       |
-| `viewportStableHeight` | `number \| undefined`                  | 稳定 viewport 高度。                           |
-| `isFullscreen`         | `boolean \| undefined`                 | 当前是否处于 fullscreen。                      |
-| `safeAreaInset`        | `SafeAreaInset \| undefined`           | 宿主安全区。                                   |
-| `contentSafeAreaInset` | `SafeAreaInset \| undefined`           | 内容安全区。                                   |
-| `launchContext`        | `Record<string, unknown> \| undefined` | 启动上下文，可放来源、场景、业务参数等。       |
+| 字段                   | 类型                                   | 说明                                     |
+| ---------------------- | -------------------------------------- | ---------------------------------------- |
+| `appVersion`           | `string`                               | TeamGaga App 版本。                      |
+| `sdkVersion`           | `string`                               | Native / 容器侧 SDK 版本。               |
+| `colorScheme`          | `"light" \| "dark"`                    | 当前颜色模式。                           |
+| `platform`             | `string`                               | 平台标识，例如 `"ios"`。                 |
+| `viewportHeight`       | `number \| undefined`                  | 当前可用 viewport 高度。                 |
+| `viewportStableHeight` | `number \| undefined`                  | 稳定 viewport 高度。                     |
+| `isFullscreen`         | `boolean \| undefined`                 | 当前是否处于 fullscreen。                |
+| `safeAreaInset`        | `SafeAreaInset \| undefined`           | 宿主安全区。                             |
+| `contentSafeAreaInset` | `SafeAreaInset \| undefined`           | 内容安全区。                             |
+| `launchContext`        | `Record<string, unknown> \| undefined` | 启动上下文，可放来源、场景、业务参数等。 |
 
 示例：
 
@@ -430,7 +430,7 @@ tgg.offEvent("viewport_changed", handleViewportChanged);
 | ----------------------------- | ------------------------------------------------------------------ |
 | `"activated"`                 | 小程序变为活跃，可恢复轮询或刷新临时状态                           |
 | `"deactivated"`               | 小程序变为非活跃，可暂停轮询、视频或动画                           |
-| `"theme_changed"`             | 从 `tgg.colorScheme` 读取最新颜色模式                             |
+| `"theme_changed"`             | 从 `tgg.colorScheme` 读取最新颜色模式                              |
 | `"viewport_changed"`          | 从 `tgg.viewportHeight` 和 `tgg.viewportStableHeight` 读取最新高度 |
 | `"safe_area_changed"`         | 从 `tgg.safeAreaInset` 读取最新安全区                              |
 | `"content_safe_area_changed"` | 从 `tgg.contentSafeAreaInset` 读取最新内容安全区                   |
