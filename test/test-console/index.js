@@ -585,10 +585,8 @@ async function invokeItem(item, params) {
       return await runtime.getCommunityInfo();
     case "downloadFile":
       return await startDownloadTask(params);
-    case "savePhoto":
-      return await runtime.savePhoto(params);
-    case "saveVideo":
-      return await runtime.saveVideo(params);
+    case "saveMediaToAlbum":
+      return await runtime.saveMediaToAlbum(params);
     case "activated":
     case "deactivated":
     case "theme_changed":

@@ -298,8 +298,7 @@ test("covers all approved P0 P1 P2 api items", () => {
       "getCommunityId",
       "getCommunityInfo",
       "downloadFile",
-      "savePhoto",
-      "saveVideo",
+      "saveMediaToAlbum",
       "clipboard_text_received",
     ]),
   );
@@ -375,21 +374,12 @@ export const API_ITEMS = [
     },
   },
   {
-    id: "savePhoto",
+    id: "saveMediaToAlbum",
     group: "device",
-    title: "savePhoto",
+    title: "saveMediaToAlbum",
     kind: "method",
     defaultParams: {
       url: "https://cdn-test.teamgaga.com/attachments/f1p3uesp340-fb14c7dc-a7df-4442-a156-f489fcf59486.jpg",
-    },
-  },
-  {
-    id: "saveVideo",
-    group: "device",
-    title: "saveVideo",
-    kind: "method",
-    defaultParams: {
-      url: "https://cdn-test.teamgaga.com/attachments/demo-video.mp4",
     },
   },
   {

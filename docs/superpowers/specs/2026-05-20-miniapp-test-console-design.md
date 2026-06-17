@@ -7,7 +7,7 @@
 - 生命周期 API：`init`、`ready`、`close`
 - UI API：`setHeaderColor`、`BackButton.show/hide`
 - 用户与业务 API：`getOauthCode`、`getUserId`、`getUserInfo`、`getCommunityId`、`getCommunityInfo`
-- 系统与设备能力：`getSystemInfo`、`downloadFile`、`savePhoto`、`saveVideo`
+- 系统与设备能力：`getSystemInfo`、`downloadFile`、`saveMediaToAlbum`
 - 运行时事件：`theme_changed`、`viewport_changed`、`safe_area_changed`、`content_safe_area_changed`、`fullscreen_changed`、`back_button_clicked`、`download_file_*`、`clipboard_text_received`
 - CSS 变量同步：`--tgg-*`
 
@@ -42,8 +42,7 @@
   - CSS 变量动态验证
 - `P2`
   - `downloadFile`
-  - `savePhoto`
-  - `saveVideo`
+  - `saveMediaToAlbum`
   - `clipboard_text_received`
   - 安全区与 viewport 可视化实验区
 
@@ -214,8 +213,7 @@
 包含三类能力：
 
 - `downloadFile`
-- `savePhoto`
-- `saveVideo`
+- `saveMediaToAlbum`
 - `clipboard_text_received`
 
 `downloadFile` 需要完整展示生命周期：
@@ -231,7 +229,7 @@
 
 页面会内置一组默认可测参数，但允许手动修改。
 
-`savePhoto` 和 `saveVideo` 都需要内置可直接点击测试的远程素材 URL，避免真机测试时还要额外准备资源。
+`saveMediaToAlbum` 需要内置可直接点击测试的远程素材 URL，避免真机测试时还要额外准备资源。
 
 `clipboard_text_received` 使用事件监听模式展示最近一次接收到的文本内容和接收时间。
 
@@ -452,10 +450,8 @@
   - `#18A0FB`
 - `downloadFile.url`
   - 稳定可访问的公开测试图片地址
-- `savePhoto.url`
-  - 稳定可访问的公开测试图片地址
-- `saveVideo.url`
-  - 稳定可访问的公开测试视频地址
+- `saveMediaToAlbum.url`
+  - 稳定可访问的公开测试媒体地址
 - `isVersionAtLeast` 预设版本
   - `1.0.0`
   - `2.0.0`
@@ -487,8 +483,7 @@
   - `setHeaderColor` 生效
   - 业务和系统 API 返回结构正确
   - `downloadFile` 进度、成功、失败、abort
-  - `savePhoto` 返回结果正确
-  - `saveVideo` 返回结果正确
+  - `saveMediaToAlbum` 返回结果正确
   - `clipboard_text_received` 能收到宿主事件
   - 主题变化或宿主布局变化后，CSS 变量区同步更新
 - 普通浏览器环境

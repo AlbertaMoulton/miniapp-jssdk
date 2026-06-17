@@ -1342,7 +1342,7 @@ test("downloadFile rejects invalid params locally", () => {
   expect(calls).toEqual([]);
 });
 
-test("savePhoto asks native to save a remote photo", async () => {
+test("saveMediaToAlbum asks native to save remote media", async () => {
   const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
   testGlobal.flutter_inappwebview = {
     async callHandler(handlerName: string, payload: unknown) {
@@ -1354,43 +1354,16 @@ test("savePhoto asks native to save a remote photo", async () => {
   const runtime = createTggRuntime();
 
   await expect(
-    runtime.savePhoto({
-      url: "https://example.com/photo.jpg",
+    runtime.saveMediaToAlbum({
+      url: "https://example.com/media.jpg",
     }),
   ).resolves.toBe(true);
   expect(calls[0]).toMatchObject({
     handlerName: "nativeBridge",
     payload: {
-      method: "savePhoto",
+      method: "saveMediaToAlbum",
       params: {
-        url: "https://example.com/photo.jpg",
-      },
-    },
-  });
-});
-
-test("saveVideo asks native to save a remote video", async () => {
-  const calls: Array<{ handlerName: string; payload: Record<string, unknown> }> = [];
-  testGlobal.flutter_inappwebview = {
-    async callHandler(handlerName: string, payload: unknown) {
-      calls.push({ handlerName, payload: payload as Record<string, unknown> });
-      return { success: true, data: true };
-    },
-  } satisfies TestFlutterBridge;
-
-  const runtime = createTggRuntime();
-
-  await expect(
-    runtime.saveVideo({
-      url: "https://example.com/video.mp4",
-    }),
-  ).resolves.toBe(true);
-  expect(calls[0]).toMatchObject({
-    handlerName: "nativeBridge",
-    payload: {
-      method: "saveVideo",
-      params: {
-        url: "https://example.com/video.mp4",
+        url: "https://example.com/media.jpg",
       },
     },
   });
@@ -1414,8 +1387,7 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
     "getCommunityInfo",
     "downloadFile",
     "abortDownloadFile",
-    "savePhoto",
-    "saveVideo",
+    "saveMediaToAlbum",
     "readTextFromClipboard",
   ]);
 });

@@ -104,20 +104,11 @@ task.onProgressUpdate(({ progress }) => {
 task.abort();
 ```
 
-Save a remote photo to the system album:
+Save remote media to the system album:
 
 ```ts
-const saved = await tgg.savePhoto({
-  url: "https://example.com/photo.jpg",
-});
-console.log(saved);
-```
-
-Save a remote video to the system album:
-
-```ts
-const saved = await tgg.saveVideo({
-  url: "https://example.com/video.mp4",
+const saved = await tgg.saveMediaToAlbum({
+  url: "https://example.com/media.jpg",
 });
 console.log(saved);
 ```

@@ -45,21 +45,12 @@ export const API_ITEMS = [
     },
   },
   {
-    id: "savePhoto",
+    id: "saveMediaToAlbum",
     group: "device",
-    title: "savePhoto",
+    title: "saveMediaToAlbum",
     kind: "method",
     defaultParams: {
       url: "https://cdn-test.teamgaga.com/attachments/f1p3uesp340-fb14c7dc-a7df-4442-a156-f489fcf59486.jpg",
-    },
-  },
-  {
-    id: "saveVideo",
-    group: "device",
-    title: "saveVideo",
-    kind: "method",
-    defaultParams: {
-      url: "https://d22wqdtjjmo1wy.cloudfront.net/attachments/4d9e1e7737e2d05cb38558d6f742024b.mp4",
     },
   },
   { id: "activated", group: "lifecycle-ui", title: "activated", kind: "event" },

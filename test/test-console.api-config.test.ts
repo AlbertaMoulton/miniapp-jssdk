@@ -25,8 +25,7 @@ test("covers all approved P0 P1 P2 api items", () => {
     "getCommunityId",
     "getCommunityInfo",
     "downloadFile",
-    "savePhoto",
-    "saveVideo",
+    "saveMediaToAlbum",
     "activated",
     "deactivated",
     "theme_changed",
@@ -67,16 +66,12 @@ test("provides first-class presets for header color and version checks", () => {
 
 test("ships click-ready default params for device actions", () => {
   const downloadItem = API_ITEMS.find((item) => item.id === "downloadFile");
-  const savePhotoItem = API_ITEMS.find((item) => item.id === "savePhoto");
-  const saveVideoItem = API_ITEMS.find((item) => item.id === "saveVideo");
+  const saveMediaItem = API_ITEMS.find((item) => item.id === "saveMediaToAlbum");
 
   expect(downloadItem?.defaultParams).toMatchObject({
     url: expect.stringMatching(/^https?:\/\//u),
   });
-  expect(savePhotoItem?.defaultParams).toMatchObject({
-    url: expect.stringMatching(/^https?:\/\//u),
-  });
-  expect(saveVideoItem?.defaultParams).toMatchObject({
+  expect(saveMediaItem?.defaultParams).toMatchObject({
     url: expect.stringMatching(/^https?:\/\//u),
   });
 });

@@ -336,28 +336,28 @@ task.abort();
 - `abort()` 会调用 Native 的 `abortDownloadFile`，并以 `downloadFile:abort` 触发 `fail` 和 `complete`。
 - 如果 `url` 不合法，SDK 会本地触发 `fail` 和 `complete`，不会调用 Native。
 
-### `tgg.savePhoto(options)`
+### `tgg.saveMediaToAlbum(options)`
 
 ```ts
-tgg.savePhoto(options: SavePhotoOptions): Promise<boolean>
+tgg.saveMediaToAlbum(options: SaveMediaToAlbumOptions): Promise<boolean>
 ```
 
 使用场景：
 
-- 将远程图片保存到系统相册。
-- 适合海报、分享图、远程素材落盘等场景。
+- 将远程图片或视频保存到系统相册。
+- 适合海报、分享图、短视频、录屏结果、本地留存等场景。
 
 参数：
 
-| 参数      | 类型               | 必填 | 说明           |
-| --------- | ------------------ | ---- | -------------- |
-| `options` | `SavePhotoOptions` | 是   | 保存图片配置。 |
+| 参数      | 类型                      | 必填 | 说明           |
+| --------- | ------------------------- | ---- | -------------- |
+| `options` | `SaveMediaToAlbumOptions` | 是   | 保存媒体配置。 |
 
-`SavePhotoOptions` 字段：
+`SaveMediaToAlbumOptions` 字段：
 
 | 字段  | 类型     | 必填 | 说明                                       |
 | ----- | -------- | ---- | ------------------------------------------ |
-| `url` | `string` | 是   | 图片地址，仅支持 `http://` 和 `https://`。 |
+| `url` | `string` | 是   | 媒体地址，仅支持 `http://` 和 `https://`。 |
 
 返回值：
 
@@ -368,46 +368,8 @@ tgg.savePhoto(options: SavePhotoOptions): Promise<boolean>
 示例：
 
 ```ts
-const saved = await tgg.savePhoto({
-  url: "https://example.com/photo.jpg",
-});
-console.log(saved);
-```
-
-### `tgg.saveVideo(options)`
-
-```ts
-tgg.saveVideo(options: SaveVideoOptions): Promise<boolean>
-```
-
-使用场景：
-
-- 将远程视频保存到系统相册。
-- 适合短视频、录屏结果、本地留存等场景。
-
-参数：
-
-| 参数      | 类型               | 必填 | 说明           |
-| --------- | ------------------ | ---- | -------------- |
-| `options` | `SaveVideoOptions` | 是   | 保存视频配置。 |
-
-`SaveVideoOptions` 字段：
-
-| 字段  | 类型     | 必填 | 说明                                       |
-| ----- | -------- | ---- | ------------------------------------------ |
-| `url` | `string` | 是   | 视频地址，仅支持 `http://` 和 `https://`。 |
-
-返回值：
-
-| 类型               | 说明                                 |
-| ------------------ | ------------------------------------ |
-| `Promise<boolean>` | Native 保存完成后 resolve 保存结果。 |
-
-示例：
-
-```ts
-const saved = await tgg.saveVideo({
-  url: "https://example.com/video.mp4",
+const saved = await tgg.saveMediaToAlbum({
+  url: "https://example.com/media.jpg",
 });
 console.log(saved);
 ```
@@ -970,8 +932,7 @@ tgg.canIUse(capability: string): boolean
 | `"getCommunityInfo"`          | 获取社群基础信息。            |
 | `"downloadFile"`              | 下载远程文件。                |
 | `"abortDownloadFile"`         | 取消下载任务。                |
-| `"savePhoto"`                 | 保存图片到系统相册。          |
-| `"saveVideo"`                 | 保存视频到系统相册。          |
+| `"saveMediaToAlbum"`          | 保存媒体到系统相册。          |
 | `"readTextFromClipboard"`     | 主动读取剪贴板文本。          |
 | `"activated"`                 | Mini App 变为活跃事件能力。   |
 | `"deactivated"`               | Mini App 变为非活跃事件能力。 |
@@ -1582,8 +1543,7 @@ type MiniAppMethod =
   | "getCommunityInfo"
   | "downloadFile"
   | "abortDownloadFile"
-  | "savePhoto"
-  | "saveVideo";
+  | "saveMediaToAlbum";
 ```
 
 ### `TggCapability`

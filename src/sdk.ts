@@ -16,8 +16,7 @@ import type {
   MiniAppMethod,
   MiniAppSDK,
   MiniAppSDKOptions,
-  SavePhotoOptions,
-  SaveVideoOptions,
+  SaveMediaToAlbumOptions,
   SystemInfo,
   UserInfo,
   TggEventName,
@@ -55,8 +54,7 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "getCommunityInfo" },
   { name: "downloadFile" },
   { name: "abortDownloadFile" },
-  { name: "savePhoto" },
-  { name: "saveVideo" },
+  { name: "saveMediaToAlbum" },
   { name: "readTextFromClipboard" },
   { name: "activated" },
   { name: "deactivated" },
@@ -88,8 +86,7 @@ export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
   "getCommunityInfo",
   "downloadFile",
   "abortDownloadFile",
-  "savePhoto",
-  "saveVideo",
+  "saveMediaToAlbum",
   "readTextFromClipboard",
 ];
 
@@ -364,8 +361,8 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     getCommunityId: () => invoke<string>("getCommunityId"),
     getCommunityInfo: () => invoke<CommunityInfo>("getCommunityInfo"),
     downloadFile,
-    savePhoto: (options: SavePhotoOptions) => invoke<boolean>("savePhoto", options),
-    saveVideo: (options: SaveVideoOptions) => invoke<boolean>("saveVideo", options),
+    saveMediaToAlbum: (options: SaveMediaToAlbumOptions) =>
+      invoke<boolean>("saveMediaToAlbum", options),
     readTextFromClipboard,
     BackButton: {
       get isVisible() {
