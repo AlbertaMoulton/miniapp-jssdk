@@ -212,7 +212,18 @@ const createJsonBlock = (value, liveMode) => {
 const createEmptyState = (message) => createElement("div", "empty-state", message);
 
 const createButton = (label, options = {}) => {
-  const button = createElement("button", options.className, label);
+  let defaultClass = "btn";
+
+  if (label === "Run" || options.variant === "primary") {
+    defaultClass = "btn btn-primary";
+  } else if (label === "Abort" || options.variant === "danger") {
+    defaultClass = "btn btn-danger";
+  } else {
+    defaultClass = "btn btn-secondary";
+  }
+
+  const className = options.className ? `${defaultClass} ${options.className}` : defaultClass;
+  const button = createElement("button", className, label);
 
   button.type = "button";
 
@@ -238,6 +249,7 @@ const createTextControl = (itemId, key, value, onChange) => {
   input.dataset.apiId = itemId;
   input.dataset.paramKey = key;
   input.value = toText(value);
+  input.className = "form-input";
 
   if (input instanceof HTMLInputElement) {
     input.type = "text";
@@ -255,8 +267,8 @@ const createTextControl = (itemId, key, value, onChange) => {
 };
 
 const createField = (label, control) => {
-  const wrapper = createElement("label");
-  const heading = createElement("strong", null, label);
+  const wrapper = createElement("label", "form-field");
+  const heading = createElement("strong", "form-label", label);
 
   wrapper.append(heading, control);
 
@@ -275,7 +287,7 @@ const createStatusPill = (isPositive, positiveLabel, negativeLabel) => {
 
 const createPanelHead = (title, trailingNode) => {
   const head = createElement("div", "panel-head");
-  const heading = createElement("h2", null, title);
+  const heading = createElement("h2", "panel-title", title);
 
   head.appendChild(heading);
 
@@ -511,6 +523,7 @@ const updateApiCard = (card, item, record, options = {}) => {
       const select = document.createElement("select");
 
       select.dataset.apiId = itemId;
+      select.className = "form-select";
 
       for (const preset of item.presets) {
         const option = document.createElement("option");
@@ -530,30 +543,36 @@ const updateApiCard = (card, item, record, options = {}) => {
       nextControls.push(createField("preset", select));
     }
 
+    const actionsRow = createElement("div", "api-actions");
+
     if (runtimeState.boundLabel) {
-      nextControls.push(createElement("span", "ghost-chip", runtimeState.boundLabel));
+      actionsRow.appendChild(createElement("span", "ghost-chip", runtimeState.boundLabel));
     }
 
     if (runtimeState.extraLabel) {
-      nextControls.push(createElement("span", "ghost-chip", runtimeState.extraLabel));
+      actionsRow.appendChild(createElement("span", "ghost-chip", runtimeState.extraLabel));
     }
 
-    nextControls.push(
+    actionsRow.appendChild(
       createButton(runtimeState.actionLabel || "Run", {
         disabled: Boolean(runtimeState.disabled),
         title: runtimeState.disabledReason,
+        className: "btn-run",
         onClick: () => safeOptions.onInvoke?.(item),
       }),
     );
 
     if (runtimeState.showAbort) {
-      nextControls.push(
+      actionsRow.appendChild(
         createButton("Abort", {
           disabled: Boolean(runtimeState.abortDisabled),
+          className: "btn-abort",
           onClick: () => safeOptions.onAbort?.(item),
         }),
       );
     }
+
+    nextControls.push(actionsRow);
 
     replaceRegionContent(controls, nextControls);
   }
@@ -656,6 +675,9 @@ export const renderLogPanel = (container, logs = [], options = {}) => {
 
   const sourceFilter = document.createElement("select");
   const levelFilter = document.createElement("select");
+
+  sourceFilter.className = "form-select";
+  levelFilter.className = "form-select";
 
   for (const value of normalizeArray(safeOptions.availableSources ?? ["all"])) {
     const option = document.createElement("option");
@@ -840,6 +862,9 @@ export const renderSafeAreaLab = (container, mode = {}) => {
 
   const heightSelect = document.createElement("select");
   const bottomSelect = document.createElement("select");
+
+  heightSelect.className = "form-select";
+  bottomSelect.className = "form-select";
   const heightModes = [
     { value: "vh", label: "100vh" },
     { value: "viewport", label: "var(--tgg-viewport-height)" },

@@ -1,19 +1,37 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#030712" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>TeamGaga MiniApp Test Console</title>
     <link rel="stylesheet" href="./test/test-console/styles.css" />
   </head>
-  <body>
+  <body class="bg-slate-950 text-slate-100 antialiased min-h-screen">
     <main class="page-shell">
       <header class="hero">
-        <p class="eyebrow">TeamGaga MiniApp JS SDK</p>
-        <h1>Real-device test console</h1>
+        <div class="hero-badge">
+          <span class="pulse-dot"></span>
+          <span>TeamGaga MiniApp JS SDK</span>
+          <span class="opacity-40">•</span>
+          <span class="hero-version">v0.3.0</span>
+        </div>
+        <h1 class="hero-title">Real-Device <span class="hero-gradient-text">Test Console</span></h1>
         <p class="hero-copy">
-          P0 + P1 + P2 coverage for API calls, events, CSS vars, and safe area.
+          P0 + P1 + P2 interactive testbed for native bridge APIs, lifecycle events, CSS environment
+          variables, and safe-area insets.
         </p>
+        <nav class="hero-nav" aria-label="Section shortcuts">
+          <a href="#environment-overview" class="nav-pill">Overview</a>
+          <a href="#lifecycle-ui-api" class="nav-pill">Lifecycle & UI</a>
+          <a href="#business-system-api" class="nav-pill">Business & System</a>
+          <a href="#device-api" class="nav-pill">Device API</a>
+          <a href="#event-log" class="nav-pill">Events & Logs</a>
+          <a href="#css-vars" class="nav-pill">CSS Variables</a>
+          <a href="#safe-area-lab" class="nav-pill">Safe Area Lab</a>
+        </nav>
       </header>
 
       <section id="environment-overview" class="panel"></section>
