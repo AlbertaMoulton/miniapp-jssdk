@@ -439,6 +439,19 @@ receive `{ data: null }`.
 
 ## Release
 
+### GitHub Pages (Test Console Deployment)
+
+The test console is hosted on GitHub Pages: [https://albertamoulton.github.io/miniapp-jssdk/](https://albertamoulton.github.io/miniapp-jssdk/).
+
+- **Repository Settings (One-time setup)**:
+  In the GitHub repository, navigate to **Settings** > **Pages** > **Build and deployment** > **Source**, and select **`GitHub Actions`**.
+- **Automated Deployment**:
+  Every push to the `main` branch automatically triggers `.github/workflows/deploy-pages.yml`, which compiles the SDK and Test Console SPA into `dist-pages/` and deploys it to GitHub Pages.
+- **Manual Deployment**:
+  You can also trigger deployment manually from the GitHub web UI: go to **Actions** > **Deploy Test Console to GitHub Pages** > **Run workflow** on branch `main`.
+
+### npm Package Release
+
 Configure npm Trusted Publishing for `@teamgaga/miniapp-jssdk`:
 
 - Publisher: GitHub Actions
