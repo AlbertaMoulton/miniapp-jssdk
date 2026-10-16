@@ -1341,6 +1341,7 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
     "init",
     "ready",
     "close",
+    "openShare",
     "setHeaderColor",
     "BackButton.show",
     "BackButton.hide",

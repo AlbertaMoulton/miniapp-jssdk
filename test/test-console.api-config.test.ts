@@ -13,6 +13,7 @@ test("covers all approved P0 P1 P2 api items", () => {
     "init",
     "ready",
     "close",
+    "openShare",
     "setHeaderColor",
     "backButtonShow",
     "backButtonHide",
@@ -73,5 +74,20 @@ test("ships click-ready default params for device actions", () => {
   });
   expect(saveMediaItem?.defaultParams).toMatchObject({
     url: expect.stringMatching(/^https?:\/\//u),
+  });
+});
+
+test("openShare exposes all seven optional fields in the console", () => {
+  const item = API_ITEMS.find((item) => item.id === "openShare");
+
+  expect(item?.title).toBe("openShare");
+  expect(item?.defaultParams).toEqual({
+    type: "card",
+    title: "",
+    description: "",
+    image: "",
+    icon: "",
+    internalLink: "",
+    externalLink: "",
   });
 });

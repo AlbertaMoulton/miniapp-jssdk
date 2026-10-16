@@ -16,6 +16,7 @@ import type {
   MiniAppMethod,
   MiniAppSDK,
   MiniAppSDKOptions,
+  OpenShareOptions,
   SaveMediaToAlbumOptions,
   SystemInfo,
   UserInfo,
@@ -43,6 +44,7 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "init" },
   { name: "ready" },
   { name: "close" },
+  { name: "openShare" },
   { name: "setHeaderColor" },
   { name: "BackButton.show" },
   { name: "BackButton.hide" },
@@ -75,6 +77,7 @@ export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
   "init",
   "ready",
   "close",
+  "openShare",
   "setHeaderColor",
   "BackButton.show",
   "BackButton.hide",
@@ -353,6 +356,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     init,
     ready: () => invoke<void>("ready"),
     close: () => invoke<void>("close"),
+    openShare: (options: OpenShareOptions = {}) => invoke<void>("openShare", options),
     setHeaderColor,
     getOauthCode: () => invoke<string>("getOauthCode"),
     getUserId: () => invoke<string>("getUserId"),
@@ -527,3 +531,5 @@ export const setHeaderColor = (color: TggHeaderColor): Promise<void> =>
 
 export const readTextFromClipboard = (): Promise<ClipboardTextReceivedResult> =>
   getTgg().readTextFromClipboard();
+
+export const openShare = (options?: OpenShareOptions): Promise<void> => getTgg().openShare(options);
