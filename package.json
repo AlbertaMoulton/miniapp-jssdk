@@ -47,6 +47,8 @@
   "scripts": {
     "ready": "pnpm run check && pnpm run test && pnpm run build",
     "build": "node scripts/sync-version.mjs && pnpm run clean && node scripts/build.mjs && pnpm run minify && tsc -p tsconfig.json --emitDeclarationOnly",
+    "build:pages": "vp build --base /miniapp-jssdk/ --outDir dist-pages --emptyOutDir",
+    "dev:pages": "vp dev",
     "check": "vp check",
     "check:fix": "vp check --fix",
     "clean": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\"",

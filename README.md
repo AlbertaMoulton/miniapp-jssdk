@@ -23,15 +23,23 @@ pnpm run build
 
 ## Test Console
 
-For real-device TeamGaga validation, build the bundles first, then serve the repo root
-from a local static server:
+For real-device TeamGaga validation, open the deployed GitHub Pages URL directly inside the TeamGaga App WebView:
+
+**Online Test Console**: [https://albertamoulton.github.io/miniapp-jssdk/](https://albertamoulton.github.io/miniapp-jssdk/)
+
+The test console is automatically built with Vite and deployed to GitHub Pages via GitHub Actions on every push to `main`.
+
+### Local Development & Build
 
 ```sh
-pnpm run build
-python3 -m http.server 4173
+# Start Vite development server for Test Console
+pnpm run dev:pages
+
+# Build Test Console SPA into dist-pages/
+pnpm run build:pages
 ```
 
-Open [http://127.0.0.1:4173/test.html](http://127.0.0.1:4173/test.html).
+Open [http://localhost:5173/](http://localhost:5173/).
 
 The console is designed to degrade safely in a normal browser:
 
@@ -41,7 +49,7 @@ The console is designed to degrade safely in a normal browser:
 
 Key files:
 
-- `test.html`: standalone test-console entry page
+- `index.html`: standalone test-console entry page
 - `test/test-console/index.js`: bootstrap, runtime detection, event wiring, and execution flow
 - `test/test-console/dom.js`: rendering helpers for panels and controls
 - `test/test-console/state.js`: pure snapshot, log, and CSS-variable helpers

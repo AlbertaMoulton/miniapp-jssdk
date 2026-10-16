@@ -5,7 +5,7 @@ export default defineConfig({
     singleQuote: false,
   },
   lint: {
-    ignorePatterns: ["**/dist/**", "**/node_modules/**"],
+    ignorePatterns: ["**/dist/**", "**/dist-pages/**", "**/node_modules/**"],
     options: {
       typeAware: true,
       typeCheck: true,
