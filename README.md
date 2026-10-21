@@ -88,37 +88,6 @@ await tgg.ready();
 await tgg.close();
 ```
 
-Open the TeamGaga share panel:
-
-```ts
-if (tgg.canIUse("openShare")) {
-  await tgg.openShare();
-  // The panel is visible; this does not indicate a completed share.
-}
-
-await tgg.openShare({
-  type: "card", // or "text"
-  title: "My miniapp",
-  description: "A page to share",
-  image: "https://example.com/cover.png",
-  icon: "https://example.com/icon.png",
-  internalLink: "https://example.com/miniapp/page",
-  externalLink: "https://example.com/share/page",
-});
-```
-
-`openShare(options?: OpenShareOptions): Promise<void>` currently opens a closable
-panel with disabled share actions. All seven fields are optional and forwarded
-unchanged. Default values, screenshots, card previews, message sending, and
-third-party sharing are pending client implementation. The promise resolves after
-the panel's first frame is shown and rejects if the host cannot open it. It does
-not wait for the panel to close or return a sharing result.
-
-Hosts dispatch the `openShare` bridge method with the options in `params` and
-use the existing success/failure response envelope. Ship the updated injected
-core runtime together with the client handler; updating the npm SDK alone does
-not add the method to an older client runtime.
-
 Download a file with progress:
 
 ```ts

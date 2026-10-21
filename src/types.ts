@@ -2,7 +2,6 @@ export type MiniAppMethod =
   | "init"
   | "ready"
   | "close"
-  | "openShare"
   | "setHeaderColor"
   | "BackButton.show"
   | "BackButton.hide"
@@ -162,16 +161,6 @@ export type SaveMediaToAlbumOptions = {
   url: string;
 };
 
-export type OpenShareOptions = {
-  type?: "text" | "card";
-  title?: string;
-  description?: string;
-  image?: string;
-  icon?: string;
-  internalLink?: string;
-  externalLink?: string;
-};
-
 export type ClipboardTextReceivedResult = {
   data: string | null;
 };
@@ -184,7 +173,6 @@ export type MiniAppSDK = {
   init(): Promise<InitData>;
   ready(): Promise<void>;
   close(): Promise<void>;
-  openShare(options?: OpenShareOptions): Promise<void>;
   setHeaderColor(color: TggHeaderColor): Promise<void>;
   getOauthCode(): Promise<string>;
   getUserId(): Promise<string>;

@@ -539,8 +539,6 @@ async function invokeItem(item, params) {
       return await runtime.ready();
     case "close":
       return await runtime.close();
-    case "openShare":
-      return await runtime.openShare(params);
     case "setHeaderColor":
       return await runtime.setHeaderColor(params.color);
     case "backButtonShow":
@@ -705,9 +703,7 @@ function getApiRuntimeState(item) {
             ? `last event: ${state.eventPayloads[item.id]?.receivedAt ?? "none"}`
             : hostCapabilityMissing
               ? `host missing: ${lastError?.missingMethod ?? capability}`
-              : item.id === "openShare"
-                ? "Panel only; share actions are disabled"
-                : "",
+              : "",
     showAbort: isDownload,
     abortDisabled: state.downloadTask?.status !== "running",
   };

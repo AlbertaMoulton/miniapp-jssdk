@@ -13,21 +13,6 @@ export const API_ITEMS = [
   { id: "ready", group: "lifecycle-ui", title: "ready", kind: "method" },
   { id: "close", group: "lifecycle-ui", title: "close", kind: "method" },
   {
-    id: "openShare",
-    group: "lifecycle-ui",
-    title: "openShare",
-    kind: "method",
-    defaultParams: {
-      type: "card",
-      title: "",
-      description: "",
-      image: "",
-      icon: "",
-      internalLink: "",
-      externalLink: "",
-    },
-  },
-  {
     id: "setHeaderColor",
     group: "lifecycle-ui",
     title: "setHeaderColor",
