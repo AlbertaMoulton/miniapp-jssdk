@@ -36,6 +36,17 @@ export const API_ITEMS = [
   { id: "getCommunityId", group: "business-system", title: "getCommunityId", kind: "method" },
   { id: "getCommunityInfo", group: "business-system", title: "getCommunityInfo", kind: "method" },
   {
+    id: "openInviteDialog",
+    group: "business-system",
+    title: "openInviteDialog",
+    kind: "method",
+    defaultParams: {
+      communityId: "79518440989134848",
+      invitationLink:
+        "https://bot-test.teamgaga.com/activity/centers/304926390032011264?communityId=79518440989134848&ic={ic}",
+    },
+  },
+  {
     id: "downloadFile",
     group: "device",
     title: "downloadFile",

@@ -88,6 +88,36 @@ await tgg.ready();
 await tgg.close();
 ```
 
+Open the native community invitation dialog:
+
+```ts
+await tgg.openInviteDialog({
+  communityId: "79518440989134848",
+  // channelId: "target-text-channel-id",
+  invitationLink:
+    "https://bot-test.teamgaga.com/activity/centers/304926390032011264?communityId=79518440989134848&ic={ic}",
+});
+```
+
+`openInviteDialog(args: { communityId: string; channelId?: string; invitationLink?: string }): Promise<void>`
+opens the dialog for the requested community, independently of the MiniApp's launch context.
+Without `channelId`, the host chooses the community's welcome text channel, then its first
+public text channel. An explicitly supplied channel must be an available text channel in
+that community; invalid targets reject with `INVALID_INVITE_CONTEXT` instead of falling back.
+
+Without `invitationLink`, the host uses its default invitation URL. A supplied link must be
+an absolute HTTP/HTTPS URL; invalid options reject with `INVALID_INVITE_OPTIONS`.
+The host replaces only search parameters named `ic` whose complete decoded value is `{ic}`
+(including `%7Bic%7D`), using the actual invitation code for the selected channel.
+All matching occurrences are replaced; existing codes, other parameters and fragments are
+preserved. Missing `ic` parameters are not added. The resulting link is used for display,
+copying, invitations to friends or group chats, external sharing and QR codes.
+
+The Promise resolves once the host requests the dialog to open after validating the options
+and target. It does not wait for rendering or dismissal, or indicate that an invitation was
+sent. Later UI errors are logged by the host. `openShare` is removed.
+The SDK forwards options to the host; it does not generate invitation codes.
+
 Download a file with progress:
 
 ```ts

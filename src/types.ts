@@ -11,6 +11,7 @@ export type MiniAppMethod =
   | "getSystemInfo"
   | "getCommunityId"
   | "getCommunityInfo"
+  | "openInviteDialog"
   | "downloadFile"
   | "abortDownloadFile"
   | "saveMediaToAlbum"
@@ -165,6 +166,12 @@ export type ClipboardTextReceivedResult = {
   data: string | null;
 };
 
+export type OpenInviteDialogOptions = {
+  communityId: string;
+  channelId?: string;
+  invitationLink?: string;
+};
+
 export type MiniAppSDK = {
   canIUse(capability: string): boolean;
   isVersionAtLeast(version: string): boolean;
@@ -180,6 +187,7 @@ export type MiniAppSDK = {
   getSystemInfo(): Promise<SystemInfo>;
   getCommunityId(): Promise<string>;
   getCommunityInfo(): Promise<CommunityInfo>;
+  openInviteDialog(args: OpenInviteDialogOptions): Promise<void>;
   downloadFile(options: DownloadFileOptions): DownloadTask;
   saveMediaToAlbum(options: SaveMediaToAlbumOptions): Promise<boolean>;
   readTextFromClipboard(): Promise<ClipboardTextReceivedResult>;

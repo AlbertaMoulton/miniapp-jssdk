@@ -581,6 +581,8 @@ async function invokeItem(item, params) {
       return await runtime.getCommunityId();
     case "getCommunityInfo":
       return await runtime.getCommunityInfo();
+    case "openInviteDialog":
+      return await runtime.openInviteDialog(params);
     case "downloadFile":
       return await startDownloadTask(params);
     case "saveMediaToAlbum":

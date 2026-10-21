@@ -24,6 +24,7 @@ test("covers all approved P0 P1 P2 api items", () => {
     "getSystemInfo",
     "getCommunityId",
     "getCommunityInfo",
+    "openInviteDialog",
     "downloadFile",
     "saveMediaToAlbum",
     "activated",

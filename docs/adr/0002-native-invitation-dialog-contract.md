@@ -1,0 +1,5 @@
+# Native invitation links and dialog opening
+
+`openInviteDialog` replaces `openShare` with explicit community/channel targets and one optional invitation link shared by every invitation destination. The native host owns invitation-code generation and resolves only complete `ic={ic}` search placeholders; the SDK forwards the template. This keeps the actual code tied to the selected channel and prevents unrelated query values or existing codes from being overwritten, while intentionally dropping the old distinction between internal and external links.
+
+The Promise completes once the host requests opening after validating options and targets. It does not wait for rendering or dismissal; later UI errors are logged by the host. This keeps `showInviteSheet` limited to the additional `invitationLink` parameter without a visibility callback. Native dialog/sheet helpers retain their dismissal-based completion for existing callers. Invalid explicit targets reject instead of silently inviting recipients into a different channel.

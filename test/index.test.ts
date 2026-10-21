@@ -7,6 +7,7 @@ import {
   default as defaultTgg,
   getCommunityId,
   getCommunityInfo,
+  openInviteDialog,
   getOauthCode,
   readTextFromClipboard,
   getSystemInfo,
@@ -155,6 +156,68 @@ test("init handshakes with Flutter and returns startup context", async () => {
       id: expect.stringMatching(REQUEST_ID_PATTERN),
       method: "init",
     },
+  });
+});
+
+test("openInviteDialog forwards options unchanged and waits for the native response", async () => {
+  const calls: unknown[] = [];
+  let respond!: (response: unknown) => void;
+  testGlobal.flutter_inappwebview = {
+    callHandler(_handlerName: string, payload: unknown) {
+      calls.push(payload);
+      return new Promise((resolve) => {
+        respond = resolve;
+      });
+    },
+  } satisfies TestFlutterBridge;
+  const options = {
+    communityId: "79518440989134848",
+    channelId: "channel-123",
+    invitationLink: "https://bot-test.teamgaga.com/activity/centers/304926390032011264?ic={ic}",
+  };
+  testGlobal.tgg = createTggRuntime();
+  let completed = false;
+  const pending = openInviteDialog(options).then(() => {
+    completed = true;
+  });
+
+  expect(calls).toEqual([expect.objectContaining({ method: "openInviteDialog", params: options })]);
+  await Promise.resolve();
+  expect(completed).toBe(false);
+  respond({ success: true });
+  await expect(pending).resolves.toBeUndefined();
+  expect(completed).toBe(true);
+});
+
+test("openInviteDialog supports default links and propagates native errors", async () => {
+  const callHandler = vi
+    .fn()
+    .mockResolvedValueOnce({ success: true })
+    .mockResolvedValueOnce({
+      success: false,
+      error: { code: "INVALID_INVITE_CONTEXT", message: "Community is unavailable" },
+    });
+  testGlobal.flutter_inappwebview = { callHandler } satisfies TestFlutterBridge;
+  const sdk = createMiniAppSDK();
+
+  await expect(sdk.openInviteDialog({ communityId: "community-123" })).resolves.toBeUndefined();
+  expect(callHandler.mock.calls[0][1]).toMatchObject({
+    method: "openInviteDialog",
+    params: { communityId: "community-123" },
+  });
+  await expect(sdk.openInviteDialog({ communityId: "missing" })).rejects.toMatchObject({
+    code: "INVALID_INVITE_CONTEXT",
+    message: "Community is unavailable",
+  });
+  expect(sdk.canIUse("openInviteDialog")).toBe(true);
+  expect(sdk.canIUse("openShare")).toBe(false);
+});
+
+test("openInviteDialog respects disabled native capabilities", async () => {
+  const sdk = createMiniAppSDK({ capabilities: [{ name: "openInviteDialog", enabled: false }] });
+
+  await expect(sdk.openInviteDialog({ communityId: "community-123" })).rejects.toMatchObject({
+    code: "UNSUPPORTED_CAPABILITY",
   });
 });
 
@@ -1350,6 +1413,7 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
     "getSystemInfo",
     "getCommunityId",
     "getCommunityInfo",
+    "openInviteDialog",
     "downloadFile",
     "abortDownloadFile",
     "saveMediaToAlbum",
