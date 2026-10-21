@@ -169,6 +169,7 @@ export type ClipboardTextReceivedResult = {
 export type OpenInviteDialogOptions = {
   communityId: string;
   channelId?: string;
+  /** @internal TeamGaga internal use only. */
   invitationLink?: string;
 };
 

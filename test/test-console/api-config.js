@@ -42,8 +42,6 @@ export const API_ITEMS = [
     kind: "method",
     defaultParams: {
       communityId: "79518440989134848",
-      invitationLink:
-        "https://bot-test.teamgaga.com/activity/centers/304926390032011264?communityId=79518440989134848&ic={ic}",
     },
   },
   {
