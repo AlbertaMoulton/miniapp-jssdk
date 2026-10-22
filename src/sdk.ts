@@ -17,6 +17,7 @@ import type {
   MiniAppSDK,
   MiniAppSDKOptions,
   OpenInviteDialogOptions,
+  OpenSystemShareOptions,
   SaveMediaToAlbumOptions,
   SystemInfo,
   UserInfo,
@@ -54,6 +55,7 @@ export const DEFAULT_CAPABILITIES: readonly CapabilityConfig[] = [
   { name: "getCommunityId" },
   { name: "getCommunityInfo" },
   { name: "openInviteDialog" },
+  { name: "openSystemShare" },
   { name: "downloadFile" },
   { name: "abortDownloadFile" },
   { name: "saveMediaToAlbum" },
@@ -87,6 +89,7 @@ export const NATIVE_METHOD_CAPABILITIES: readonly MiniAppMethod[] = [
   "getCommunityId",
   "getCommunityInfo",
   "openInviteDialog",
+  "openSystemShare",
   "downloadFile",
   "abortDownloadFile",
   "saveMediaToAlbum",
@@ -364,6 +367,7 @@ export const createMiniAppSDK = (options: MiniAppSDKOptions = {}): MiniAppSDK =>
     getCommunityId: () => invoke<string>("getCommunityId"),
     getCommunityInfo: () => invoke<CommunityInfo>("getCommunityInfo"),
     openInviteDialog: (args: OpenInviteDialogOptions) => invoke<void>("openInviteDialog", args),
+    openSystemShare: (args: OpenSystemShareOptions) => invoke<void>("openSystemShare", args),
     downloadFile,
     saveMediaToAlbum: (options: SaveMediaToAlbumOptions) =>
       invoke<boolean>("saveMediaToAlbum", options),
@@ -528,6 +532,9 @@ export const getCommunityInfo = (): Promise<CommunityInfo> => getTgg().getCommun
 
 export const openInviteDialog = (args: OpenInviteDialogOptions): Promise<void> =>
   getTgg().openInviteDialog(args);
+
+export const openSystemShare = (args: OpenSystemShareOptions): Promise<void> =>
+  getTgg().openSystemShare(args);
 
 export const setHeaderColor = (color: TggHeaderColor): Promise<void> =>
   getTgg().setHeaderColor(color);

@@ -8,6 +8,7 @@ import {
   getCommunityId,
   getCommunityInfo,
   openInviteDialog,
+  openSystemShare,
   getOauthCode,
   readTextFromClipboard,
   getSystemInfo,
@@ -219,6 +220,66 @@ test("openInviteDialog respects disabled native capabilities", async () => {
   await expect(sdk.openInviteDialog({ communityId: "community-123" })).rejects.toMatchObject({
     code: "UNSUPPORTED_CAPABILITY",
   });
+});
+
+test("openSystemShare forwards options unchanged and waits for the native response", async () => {
+  const calls: unknown[] = [];
+  let respond!: (response: unknown) => void;
+  testGlobal.flutter_inappwebview = {
+    callHandler(_handlerName: string, payload: unknown) {
+      calls.push(payload);
+      return new Promise((resolve) => {
+        respond = resolve;
+      });
+    },
+  } satisfies TestFlutterBridge;
+  const options = { url: "  https://example.com/activity  ", subject: "ignored by host" };
+  createTggRuntime();
+  let completed = false;
+  const pending = openSystemShare(options).then(() => {
+    completed = true;
+  });
+
+  expect(calls).toEqual([expect.objectContaining({ method: "openSystemShare", params: options })]);
+  await Promise.resolve();
+  expect(completed).toBe(false);
+  respond({ success: true });
+  await expect(pending).resolves.toBeUndefined();
+  expect(completed).toBe(true);
+});
+
+test("openSystemShare leaves validation to the host and propagates native errors", async () => {
+  const callHandler = vi.fn().mockResolvedValue({
+    success: false,
+    error: {
+      code: "INVALID_OPEN_SYSTEM_SHARE_OPTIONS",
+      message: "openSystemShare requires a valid absolute HTTP/HTTPS url",
+    },
+  });
+  testGlobal.flutter_inappwebview = { callHandler } satisfies TestFlutterBridge;
+  const sdk = createMiniAppSDK();
+
+  await expect(sdk.openSystemShare({ url: " " })).rejects.toMatchObject({
+    code: "INVALID_OPEN_SYSTEM_SHARE_OPTIONS",
+    message: "openSystemShare requires a valid absolute HTTP/HTTPS url",
+  });
+  expect(callHandler.mock.calls[0][1]).toMatchObject({
+    method: "openSystemShare",
+    params: { url: " " },
+  });
+  expect(sdk.canIUse("openSystemShare")).toBe(true);
+  expect(sdk.canIUse("share")).toBe(false);
+});
+
+test("openSystemShare respects disabled native capabilities before forwarding", async () => {
+  const callHandler = vi.fn();
+  testGlobal.flutter_inappwebview = { callHandler } satisfies TestFlutterBridge;
+  const sdk = createMiniAppSDK({ capabilities: [{ name: "openSystemShare", enabled: false }] });
+
+  await expect(sdk.openSystemShare({ url: " " })).rejects.toMatchObject({
+    code: "UNSUPPORTED_CAPABILITY",
+  });
+  expect(callHandler).not.toHaveBeenCalled();
 });
 
 test("supports custom native handler names", async () => {
@@ -1414,6 +1475,7 @@ test("getSupportedCapabilities returns native method capabilities", async () => 
     "getCommunityId",
     "getCommunityInfo",
     "openInviteDialog",
+    "openSystemShare",
     "downloadFile",
     "abortDownloadFile",
     "saveMediaToAlbum",

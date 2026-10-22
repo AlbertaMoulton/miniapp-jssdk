@@ -583,6 +583,8 @@ async function invokeItem(item, params) {
       return await runtime.getCommunityInfo();
     case "openInviteDialog":
       return await runtime.openInviteDialog(params);
+    case "openSystemShare":
+      return await runtime.openSystemShare(params);
     case "downloadFile":
       return await startDownloadTask(params);
     case "saveMediaToAlbum":

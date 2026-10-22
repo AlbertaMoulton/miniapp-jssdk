@@ -25,6 +25,7 @@ test("covers all approved P0 P1 P2 api items", () => {
     "getCommunityId",
     "getCommunityInfo",
     "openInviteDialog",
+    "openSystemShare",
     "downloadFile",
     "saveMediaToAlbum",
     "activated",
@@ -74,5 +75,13 @@ test("ships click-ready default params for device actions", () => {
   });
   expect(saveMediaItem?.defaultParams).toMatchObject({
     url: expect.stringMatching(/^https?:\/\//u),
+  });
+});
+
+test("provides an activity link for system sharing", () => {
+  const shareItem = API_ITEMS.find((item) => item.id === "openSystemShare");
+
+  expect(shareItem?.defaultParams).toEqual({
+    url: "https://bot-test.teamgaga.com/activity/centers/304926390032011264",
   });
 });

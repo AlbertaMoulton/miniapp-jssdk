@@ -111,6 +111,26 @@ and target. It does not wait for rendering or dismissal, or indicate that an inv
 sent. Later UI errors are logged by the host. `openShare` is removed.
 The SDK forwards options to the host; it does not generate invitation codes.
 
+Share an activity link through the system share sheet:
+
+```ts
+await tgg.openSystemShare({
+  url: "https://bot-test.teamgaga.com/activity/centers/304926390032011264",
+});
+```
+
+`openSystemShare(args: { url: string }): Promise<void>` shares the trimmed URL as plain
+text through the host's existing system share utility. The host requires a non-empty,
+absolute HTTP/HTTPS URL; invalid options reject with `INVALID_OPEN_SYSTEM_SHARE_OPTIONS`.
+Unknown fields are ignored. The SDK forwards the arguments and only checks `canIUse`.
+A host without this capability rejects with `UNSUPPORTED_CAPABILITY` before validation.
+
+The Promise resolves after validation and triggering the sheet, without waiting for
+dismissal or returning a share result. Another call starts another share. On non-Apple
+desktops and Web, the host copies the link instead and resolves after copying finishes,
+including a copy failure reported through the existing toast. macOS presents a sheet.
+This API shares links only; use `openInviteDialog` for community invitations.
+
 Download a file with progress:
 
 ```ts

@@ -45,6 +45,15 @@ export const API_ITEMS = [
     },
   },
   {
+    id: "openSystemShare",
+    group: "business-system",
+    title: "openSystemShare",
+    kind: "method",
+    defaultParams: {
+      url: "https://bot-test.teamgaga.com/activity/centers/304926390032011264",
+    },
+  },
+  {
     id: "downloadFile",
     group: "device",
     title: "downloadFile",

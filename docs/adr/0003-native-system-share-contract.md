@@ -1,0 +1,7 @@
+# Native system share sheet contract
+
+`openSystemShare({ url: string }): Promise<void>` lets the MiniApp share an activity link through the existing `ShareUtils.share` (`share_plus`). It does not share files, open in-app forwarding, target a social app, or replace `openInviteDialog`. Calling it again while a sheet is open starts another share and does not reject.
+
+The host requires a non-empty string `url`, trims it, and applies the same absolute HTTP/HTTPS check as an invitation link. A missing, blank, non-string, or invalid `url` rejects with `INVALID_OPEN_SYSTEM_SHARE_OPTIONS`. Unknown fields are ignored. The trimmed link is passed directly to `ShareUtils.share(url)` as plain text. Website previews and email subjects are outside this contract. `ShareUtils` and the native plugins require no changes; the existing link-copied and copy-failed toasts apply.
+
+The promise resolves once the host has validated the options and triggered the sheet. Where `ShareUtils` already copies instead of presenting a sheet (non-Apple desktops and web), the promise resolves after that copy finishes, including when the copy fails and the host has shown its error toast. macOS still presents a sheet. The call does not wait for dismissal or return `ShareResult`. A missing host callback rejects with `UNSUPPORTED_CAPABILITY` before the options are parsed. The SDK forwards the arguments and only applies `canIUse`. The method is not named `share` or `openShare`.
