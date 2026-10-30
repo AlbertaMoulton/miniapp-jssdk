@@ -50,6 +50,8 @@ export const API_ITEMS = [
     title: "openSystemShare",
     kind: "method",
     defaultParams: {
+      title: "TeamGaga Activity",
+      text: "Check out this activity",
       url: "https://bot-test.teamgaga.com/activity/centers/304926390032011264",
     },
   },

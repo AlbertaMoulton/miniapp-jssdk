@@ -78,10 +78,12 @@ test("ships click-ready default params for device actions", () => {
   });
 });
 
-test("provides an activity link for system sharing", () => {
+test("provides title, text and an activity link for system sharing", () => {
   const shareItem = API_ITEMS.find((item) => item.id === "openSystemShare");
 
   expect(shareItem?.defaultParams).toEqual({
+    title: "TeamGaga Activity",
+    text: "Check out this activity",
     url: "https://bot-test.teamgaga.com/activity/centers/304926390032011264",
   });
 });

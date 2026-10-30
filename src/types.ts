@@ -175,7 +175,9 @@ export type OpenInviteDialogOptions = {
 };
 
 export type OpenSystemShareOptions = {
-  url: string;
+  title?: string;
+  text?: string;
+  url?: string;
 };
 
 export type MiniAppSDK = {
