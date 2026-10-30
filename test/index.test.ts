@@ -271,6 +271,41 @@ test("openSystemShare leaves validation to the host and propagates native errors
   expect(sdk.canIUse("share")).toBe(false);
 });
 
+test.each([
+  { url: "  https://example.com/activity  " },
+  { title: " Activity ", url: "https://example.com/activity" },
+  { text: "  Activity details\nSecond line  " },
+  { title: " Activity ", text: " Activity details " },
+  { text: " Activity details ", url: "https://example.com/activity" },
+  { title: " Activity ", text: " Activity details ", url: "https://example.com/activity" },
+])("openSystemShare forwards %j through both bridge transports", async (options) => {
+  const callHandler = vi.fn().mockResolvedValue({ success: true });
+  testGlobal.flutter_inappwebview = { callHandler } satisfies TestFlutterBridge;
+
+  await expect(createMiniAppSDK().openSystemShare(options)).resolves.toBeUndefined();
+  expect(callHandler.mock.calls[0][1]).toMatchObject({
+    method: "openSystemShare",
+    params: options,
+  });
+
+  Reflect.deleteProperty(testGlobal, "flutter_inappwebview");
+  const messages: Record<string, unknown>[] = [];
+  testGlobal.nativeBridge = {
+    postMessage(message: string) {
+      const request = JSON.parse(message) as Record<string, unknown>;
+      messages.push(request);
+      (testGlobal.__tgg_resolve as (id: string, envelope: unknown) => void)(request.id as string, {
+        success: true,
+      });
+    },
+  } satisfies TestJavaScriptChannel;
+
+  await expect(createMiniAppSDK().openSystemShare(options)).resolves.toBeUndefined();
+  expect(messages).toEqual([
+    expect.objectContaining({ method: "openSystemShare", params: options }),
+  ]);
+});
+
 test("openSystemShare respects disabled native capabilities before forwarding", async () => {
   const callHandler = vi.fn();
   testGlobal.flutter_inappwebview = { callHandler } satisfies TestFlutterBridge;

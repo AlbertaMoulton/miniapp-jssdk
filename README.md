@@ -111,25 +111,38 @@ and target. It does not wait for rendering or dismissal, or indicate that an inv
 sent. Later UI errors are logged by the host. `openShare` is removed.
 The SDK forwards options to the host; it does not generate invitation codes.
 
-Share an activity link through the system share sheet:
+Share text or an activity link through the system share sheet:
 
 ```ts
 await tgg.openSystemShare({
+  title: "TeamGaga Activity",
+  text: "Check out this activity",
   url: "https://bot-test.teamgaga.com/activity/centers/304926390032011264",
 });
+
+await tgg.openSystemShare({ text: "Activity details" });
 ```
 
-`openSystemShare(args: { url: string }): Promise<void>` shares the trimmed URL as plain
-text through the host's existing system share utility. The host requires a non-empty,
-absolute HTTP/HTTPS URL; invalid options reject with `INVALID_OPEN_SYSTEM_SHARE_OPTIONS`.
-Unknown fields are ignored. The SDK forwards the arguments and only checks `canIUse`.
-A host without this capability rejects with `UNSUPPORTED_CAPABILITY` before validation.
+`openSystemShare(args: { title?: string; text?: string; url?: string }): Promise<void>`
+accepts three optional strings. The host trims them and requires non-empty `text` or a
+valid absolute HTTP/HTTPS `url`; a title alone is insufficient. A supplied `url` must be
+valid even when `text` is present. Invalid options, including non-string fields, reject
+with `INVALID_OPEN_SYSTEM_SHARE_OPTIONS`. Unknown fields are ignored. The SDK forwards
+the arguments and only checks `canIUse`. A host without this capability rejects with
+`UNSUPPORTED_CAPABILITY` before validation.
+
+With only a URL, the host uses URI sharing, allowing iOS to fetch website metadata.
+With both text and a URL, it shares the text followed by a newline and the URL as one
+text value. `title` is passed separately where supported; it is not an email subject.
+Title and preview display depend on the system and receiving app.
 
 The Promise resolves after validation and triggering the sheet, without waiting for
 dismissal or returning a share result. Another call starts another share. On non-Apple
-desktops and Web, the host copies the link instead and resolves after copying finishes,
+desktops and Web, the host copies the text, link, or combined content instead and resolves after copying finishes,
 including a copy failure reported through the existing toast. macOS presents a sheet.
-This API shares links only; use `openInviteDialog` for community invitations.
+This API shares text and links; use `openInviteDialog` for community invitations.
+Existing `{ url }` calls remain valid. Text and title support requires an updated host;
+`canIUse("openSystemShare")` alone does not detect support for individual fields.
 
 Download a file with progress:
 
